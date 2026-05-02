@@ -501,10 +501,13 @@ def _generic_export_excel(export_data: List[Dict], file_path: str) -> Tuple[bool
         if not file_path.endswith(".xlsx"):
             file_path += ".xlsx"
 
-        # 保存为xlsx文件
-        df.to_excel(file_path, index=False, engine="openpyxl")
+        target_path = get_path(file_path)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        success_msg = f"已导出到: {file_path}"
+        # 保存为xlsx文件
+        df.to_excel(target_path, index=False, engine="openpyxl")
+
+        success_msg = f"已导出到: {target_path}"
         logger.info(success_msg)
         return True, success_msg
 
@@ -529,10 +532,13 @@ def _generic_export_csv(export_data: List[Dict], file_path: str) -> Tuple[bool, 
         if not file_path.endswith(".csv"):
             file_path += ".csv"
 
-        # 保存为CSV文件
-        df.to_csv(file_path, index=False, encoding="utf-8-sig")
+        target_path = get_path(file_path)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        success_msg = f"已导出到: {file_path}"
+        # 保存为CSV文件
+        df.to_csv(target_path, index=False, encoding="utf-8-sig")
+
+        success_msg = f"已导出到: {target_path}"
         logger.info(success_msg)
         return True, success_msg
 
@@ -549,12 +555,15 @@ def _generic_export_txt(names: List[str], file_path: str) -> Tuple[bool, str]:
         if not file_path.endswith(".txt"):
             file_path += ".txt"
 
+        target_path = get_path(file_path)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
         # 提取姓名并保存为TXT文件，每行一个姓名
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(target_path, "w", encoding="utf-8") as f:
             for name in names:
                 f.write(f"{name}\n")
 
-        success_msg = f"已导出到: {file_path}"
+        success_msg = f"已导出到: {target_path}"
         logger.info(success_msg)
         return True, success_msg
 

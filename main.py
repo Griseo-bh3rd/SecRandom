@@ -396,7 +396,7 @@ def restart_application(program_dir):
             logger.info("Linux/Unix/macOS 平台：使用 execl 重启应用程序")
             os.execl(executable, executable, *filtered_args)
     except Exception as e:
-        logger.exception(f"重启应用程序失败: {e}")
+        logger.warning(f"重启应用程序失败: {e}")
         os._exit(1)
 
 

@@ -440,6 +440,8 @@ class VoiceCacheManager:
             .replace("<", "_")
             .replace(">", "_")
             .replace("|", "_")
+            .replace("\r", "_")
+            .replace("\n", "_")
         )
         return f"{voice}_{safe_text}"
 
@@ -455,6 +457,8 @@ class VoiceCacheManager:
             .replace("<", "_")
             .replace(">", "_")
             .replace("|", "_")
+            .replace("\r", "_")
+            .replace("\n", "_")
         )
         filename = f"{voice}_{safe_text}.wav"
         return os.path.join(self.audio_dir, filename)
@@ -799,7 +803,7 @@ class TTSHandler:
                     self.voice_engine.say(f"{name}")
                     self.voice_engine.iterate()
                 except Exception as e:
-                    logger.exception(f"处理{name}失败: {e}")
+                    logger.warning(f"处理{name}失败: {e}")
 
     def _handle_edge_tts(
         self, student_names: List[str], config: Dict[str, Any], voice_name: str
@@ -823,9 +827,9 @@ class TTSHandler:
             try:
                 file_path = self.cache_manager.get_voice(name, voice_name)
                 if not self.playback_system.add_task(file_path):
-                    logger.exception(f"提交播放任务失败: {name}")
+                    logger.warning(f"提交播放任务失败: {name}")
             except Exception as e:
-                logger.exception(f"处理{name}失败: {e}")
+                logger.warning(f"处理{name}失败: {e}")
 
         logger.debug("所有语音播放任务已提交，将异步播放")
 
@@ -843,4 +847,4 @@ class TTSHandler:
                 try:
                     self.voice_engine.stop()
                 except Exception as e:
-                    logger.exception(f"停止系统TTS引擎失败: {e}")
+                    logger.warning(f"停止系统TTS引擎失败: {e}")

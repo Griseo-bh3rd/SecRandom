@@ -7,7 +7,6 @@ SECTL 在线状态上报模块
 """
 
 import json
-import re
 import uuid
 import socket
 import threading
@@ -69,20 +68,14 @@ def _get_local_ip() -> str:
 
 def _get_public_ip(timeout_seconds: float = 5.0) -> Optional[str]:
     services = [
-        "https://321260.xyz/api/ip.php",   # v4出口网络 (优先)
-        "https://ddns.oray.com/checkip",
-        "http://v4.66666.host:66/ip",
-        "https://myip.ipip.net",
+        "https://321260.xyz/api/ip.php", # v4出口网络
     ]
 
     for service in services:
         try:
             response = requests.get(service, timeout=timeout_seconds)
             if response.status_code == 200:
-                text = response.text.strip()
-                match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", text)
-                if match:
-                    return match.group(0)
+                return response.text.strip()
         except Exception:
             continue
 

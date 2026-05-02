@@ -44,7 +44,7 @@ class WindowManager:
             self._create_main_window_impl, error_message="创建主窗口失败"
         )
         if not success:
-            logger.exception("主窗口创建失败", exc_info=True)
+            logger.warning("主窗口创建失败")
 
     def _create_main_window_impl(self) -> None:
         """创建主窗口的实现"""

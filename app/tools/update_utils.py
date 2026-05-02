@@ -848,7 +848,7 @@ async def download_update_async(
                         file_path.unlink()
                         logger.info(f"已删除损坏的文件: {file_path}")
                     except Exception as unlink_error:
-                        logger.exception(f"删除损坏文件失败: {unlink_error}")
+                        logger.warning(f"删除损坏文件失败: {unlink_error}")
                 # 继续尝试下一个镜像源
                 continue
 
@@ -862,7 +862,7 @@ async def download_update_async(
                     file_path.unlink()
                     logger.info(f"已删除部分下载文件: {file_path}")
                 except Exception as unlink_error:
-                    logger.exception(f"删除部分下载文件失败: {unlink_error}")
+                    logger.warning(f"删除部分下载文件失败: {unlink_error}")
             continue
 
     # 所有镜像源都失败了

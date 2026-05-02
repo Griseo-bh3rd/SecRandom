@@ -32,16 +32,13 @@ from app.tools.list_specific_settings_access import read_quick_draw_setting
 class QuickDrawAnimation(QObject):
     """闪抽动画类，封装闪抽动画逻辑"""
 
-    # 动画完成信号
-    animation_finished = Signal()
-
     def __init__(self, roll_call_widget):
         """初始化闪抽动画类
 
         Args:
             roll_call_widget: 点名控件实例
         """
-        super().__init__()
+        super().__init__(roll_call_widget)
         self.roll_call_widget = roll_call_widget
         self.is_animating = False
         self.animation_timer = None
@@ -55,6 +52,7 @@ class QuickDrawAnimation(QObject):
 
     def _get_default_filters(self):
         class_name = readme_settings_async("quick_draw_settings", "default_class")
+        class_names = get_class_name_list()
         group_index = 0
         gender_index = 0
 
@@ -76,6 +74,9 @@ class QuickDrawAnimation(QObject):
             )
             if saved_class_name and saved_class_name in get_class_name_list():
                 class_name = saved_class_name
+
+        if class_name not in class_names:
+            class_name = class_names[0] if class_names else ""
 
         self.active_class_name = class_name
 
@@ -128,6 +129,15 @@ class QuickDrawAnimation(QObject):
                 gender_filter = saved_gender_filter
 
         return class_name, group_index, group_filter, gender_index, gender_filter
+
+    def _abort_animation(self):
+        """停止动画并清理状态，不执行最终抽取"""
+        if self.animation_timer and self.animation_timer.isActive():
+            self.animation_timer.stop()
+        self.is_animating = False
+        self.animation_timer = None
+        self.roll_call_widget.is_quick_draw = False
+        music_player.stop_music(fade_out=False)
 
     def _build_selected_students(self, students):
         selected_students = []
@@ -237,14 +247,17 @@ class QuickDrawAnimation(QObject):
             self.animation_timer.start(animation_interval)
             QTimer.singleShot(
                 autoplay_count * animation_interval,
-                lambda: [
-                    self.stop_animation(),
-                    self.animation_timer.stop(),
-                ],
+                self._handle_autostop_timeout,
             )
         elif animation_mode == 2:
             logger.debug("start_animation: 无动画模式，直接停止动画")
             self.stop_animation()
+
+    def _handle_autostop_timeout(self):
+        """处理自动停止动画的定时回调。"""
+        if not self.is_animating:
+            return
+        self.stop_animation()
 
     def stop_animation(self):
         """停止闪抽动画"""
@@ -252,6 +265,7 @@ class QuickDrawAnimation(QObject):
         if self.animation_timer and self.animation_timer.isActive():
             self.animation_timer.stop()
         self.is_animating = False
+        self.animation_timer = None
         self.roll_call_widget.is_quick_draw = False
 
         # 执行最终抽取
@@ -359,9 +373,7 @@ class QuickDrawAnimation(QObject):
             )
             self.final_selected_students = []
             self.final_class_name = None
-            if self.animation_timer and self.animation_timer.isActive():
-                self.animation_timer.stop()
-            self.stop_animation()
+            self._abort_animation()
             return False
 
         current_count = read_quick_draw_setting(class_name, "draw_count")
@@ -451,10 +463,6 @@ class QuickDrawAnimation(QObject):
         self.quick_draw_settings = quick_draw_settings
 
         try:
-            self.animation_finished.connect(
-                lambda: self.display_final_result(quick_draw_settings)
-            )
-
             # 根据动画模式执行不同逻辑
             animation_mode = quick_draw_settings["animation"]
 
@@ -467,14 +475,8 @@ class QuickDrawAnimation(QObject):
                 # 使用独立的抽取逻辑
                 success = self.draw_random_students()
                 if success:
-                    # 使用闪抽设置更新显示结果
-                    self.roll_call_widget.display_result(
-                        self.final_selected_students,
-                        self.final_class_name,
-                        quick_draw_settings,
-                    )
+                    self.display_final_result(quick_draw_settings)
                 self.roll_call_widget.is_quick_draw = False
-                self.animation_finished.emit()
 
         except Exception as e:
             logger.exception(f"execute_quick_draw: 执行闪抽流程失败: {e}")
