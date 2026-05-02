@@ -7,6 +7,7 @@ SECTL 在线状态上报模块
 """
 
 import json
+import re
 import uuid
 import socket
 import threading
@@ -16,7 +17,7 @@ from typing import Optional, Dict, Any
 import requests
 from loguru import logger
 
-from app.tools.path_utils import get_data_path
+from app.tools.settings_access import readme_settings_async
 from app.tools.variable import (
     SECTL_API_BASE_URL,
     SECTL_PLATFORM_ID,
@@ -26,7 +27,6 @@ from app.tools.variable import (
 )
 
 
-_DEVICE_UUID_FILE = "device_uuid.json"
 _online_status_reporter: Optional["OnlineStatusReporter"] = None
 _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="online_status")
 
@@ -73,12 +73,24 @@ def _get_public_ip(timeout_seconds: float = 5.0) -> Optional[str]:
 
     for service in services:
         try:
+            logger.debug(f"获取公网IP: {service}")
             response = requests.get(service, timeout=timeout_seconds)
             if response.status_code == 200:
-                return response.text.strip()
-        except Exception:
+                text = response.text.strip()
+                match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", text)
+                if match:
+                    ip = match.group(0)
+                    logger.debug(f"公网IP获取成功: {service} → {ip}")
+                    return ip
+                else:
+                    logger.debug(f"公网IP解析失败: {service}, 响应: {text[:80]}")
+            else:
+                logger.debug(f"公网IP请求失败: {service}, HTTP {response.status_code}")
+        except Exception as e:
+            logger.debug(f"公网IP异常: {service}, {e}")
             continue
 
+    logger.warning("所有公网IP服务均获取失败")
     return None
 
 
@@ -122,30 +134,13 @@ def _get_ip_location(ip: str, timeout_seconds: float = 10.0) -> Dict[str, Any]:
 
 
 def _load_or_create_device_uuid() -> str:
-    uuid_file = get_data_path(_DEVICE_UUID_FILE)
-
-    if uuid_file.exists():
-        try:
-            with open(uuid_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                device_uuid = data.get("device_uuid")
-                if device_uuid:
-                    try:
-                        uuid.UUID(device_uuid)
-                        return device_uuid
-                    except ValueError:
-                        pass
-        except Exception:
-            pass
+    device_uuid = readme_settings_async("basic_settings", "offline_user_id")
+    if device_uuid:
+        return device_uuid
 
     device_uuid = str(uuid.uuid4()).lower()
-    try:
-        uuid_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(uuid_file, "w", encoding="utf-8") as f:
-            json.dump({"device_uuid": device_uuid}, f)
-    except Exception:
-        pass
-
+    from app.tools.settings_access import update_settings
+    update_settings("basic_settings", "offline_user_id", device_uuid)
     return device_uuid
 
 
@@ -159,17 +154,27 @@ def _do_report(
     city: Optional[str],
     district: Optional[str],
 ) -> Dict[str, Any]:
-    if not ip_address:
-        ip_address = _get_public_ip(SECTL_ONLINE_REPORT_TIMEOUT_SECONDS)
-        if not ip_address:
-            ip_address = _get_local_ip()
+    telemetry_mode = readme_settings_async("basic_settings", "telemetry_mode") or "full"
+    report_ip = telemetry_mode != "anonymous"
+    logger.debug(f"上报模式: {telemetry_mode}, report_ip={report_ip}")
 
-    if not all([country, province, city, district]):
-        location = _get_ip_location(ip_address, SECTL_ONLINE_REPORT_TIMEOUT_SECONDS)
-        country = country or location.get("country", "未知")
-        province = province or location.get("province", "未知")
-        city = city or location.get("city", "未知")
-        district = district or location.get("district", "未知")
+    if report_ip:
+        if not ip_address:
+            ip_address = _get_public_ip(SECTL_ONLINE_REPORT_TIMEOUT_SECONDS)
+            if not ip_address:
+                ip_address = _get_local_ip()
+        if not all([country, province, city, district]):
+            location = _get_ip_location(ip_address, SECTL_ONLINE_REPORT_TIMEOUT_SECONDS)
+            country = country or location.get("country", "未知")
+            province = province or location.get("province", "未知")
+            city = city or location.get("city", "未知")
+            district = district or location.get("district", "未知")
+    else:
+        ip_address = ip_address or "0.0.0.0"
+        country = country or "未知"
+        province = province or "未知"
+        city = city or "未知"
+        district = district or "未知"
 
     payload = {
         "platform_id": platform_id,
@@ -200,7 +205,10 @@ def _do_report(
         result = response.json()
         online_count = result.get("online_count", 0)
         update_online_count_cache(online_count)
-        logger.info(f"上报在线状态成功，当前在线人数: {online_count}")
+        if report_ip:
+            logger.info(f"上报在线状态成功，当前在线人数: {online_count}")
+        else:
+            logger.info("上报在线状态成功")
         return result
 
     except requests.exceptions.Timeout:
@@ -265,17 +273,8 @@ class OnlineStatusReporter:
 
     def _init_ip_and_location_async(self):
         def _do_init():
-            ip_address = _get_public_ip(SECTL_ONLINE_REPORT_TIMEOUT_SECONDS)
-            if not ip_address:
-                ip_address = _get_local_ip()
-            location = _get_ip_location(ip_address, SECTL_ONLINE_REPORT_TIMEOUT_SECONDS)
-            self._ip_address = ip_address
-            self._country = location.get("country", "未知")
-            self._province = location.get("province", "未知")
-            self._city = location.get("city", "未知")
-            self._district = location.get("district", "未知")
             self._initialized = True
-            logger.debug(f"在线状态上报器初始化完成，IP: {ip_address}, 位置: {self._country} {self._province} {self._city}")
+            logger.debug("在线状态上报器初始化完成")
             self._report_async()
 
         _executor.submit(_do_init)
@@ -324,18 +323,18 @@ class OnlineStatusReporter:
         if not self._is_running:
             return
 
-        logger.debug(f"触发在线状态上报，IP: {self._ip_address}, 已初始化: {self._initialized}")
+        logger.debug("触发在线状态上报")
 
         _executor.submit(
             _do_report,
             self.platform_id,
             self.device_uuid,
             self.device_type,
-            self._ip_address,
-            self._country,
-            self._province,
-            self._city,
-            self._district,
+            None,   # 每次重新获取公网 IP
+            None,   # 每次重新获取位置信息
+            None,
+            None,
+            None,
         )
 
     def report_now(self):

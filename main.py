@@ -180,9 +180,6 @@ def initialize_application():
     logger.remove()
     configure_logging()
 
-    if DEV_VERSION not in VERSION:
-        initialize_sentry()
-
     wm.app_start_time = time.perf_counter()
 
     shared_memory, is_first_instance = check_single_instance()
@@ -476,6 +473,10 @@ def main():
 
     manage_settings_file()
 
+    if DEV_VERSION not in VERSION:
+        if readme_settings_async("basic_settings", "telemetry_enabled") is not False:
+            initialize_sentry()
+
     app, window_manager, url_handler, cs_ipc_handler, local_server = (
         setup_qt_application()
     )
@@ -489,6 +490,7 @@ def main():
 
     if VERSION == DEV_VERSION:
         setup_dev_hints(app)
+    if readme_settings_async("basic_settings", "telemetry_mode") != "off":
         initialize_online_status()
 
     try:
