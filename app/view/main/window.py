@@ -203,13 +203,7 @@ class MainWindow(FluentWindow):
             )
 
         mode = int(mode)
-        flags = self.windowFlags()
-        if mode != 0:
-            flags |= Qt.WindowStaysOnTopHint
-        else:
-            flags &= ~Qt.WindowStaysOnTopHint
-
-        self.setWindowFlags(flags)
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, mode != 0)
         if self.isVisible():
             self.show()
 

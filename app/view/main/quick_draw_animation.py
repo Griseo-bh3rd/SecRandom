@@ -2,7 +2,7 @@
 # 导入库
 # ==================================================
 
-from PySide6.QtCore import QTimer, Signal, QObject
+from PySide6.QtCore import QTimer, Signal, QObject, Qt
 from loguru import logger
 
 from app.common.data.list import *
@@ -224,10 +224,12 @@ class QuickDrawAnimation(QObject):
 
         animation_music = read_quick_draw_setting(class_name, "animation_music")
         if animation_music:
+            loop = readme_settings_async("music_settings", "background_music_loop")
+            loop = True if loop is None else loop
             music_player.play_music(
                 music_file=animation_music,
                 settings_group="quick_draw_settings",
-                loop=True,
+                loop=loop,
                 fade_in=True,
             )
 

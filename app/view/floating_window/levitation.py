@@ -296,12 +296,9 @@ class LevitationWindow(QWidget):
             self.setAttribute(Qt.WA_ShowWithoutActivating, no_focus)
         except Exception:
             pass
-        flags = self._base_window_flags
-        if getattr(self, "_topmost_mode", 1) != 0:
-            flags |= Qt.WindowStaysOnTopHint
-        if no_focus:
-            flags |= Qt.WindowDoesNotAcceptFocus
-        self.setWindowFlags(flags)
+        topmost = getattr(self, "_topmost_mode", 1) != 0
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, topmost)
+        self.setWindowFlag(Qt.WindowDoesNotAcceptFocus, no_focus)
         if self.isVisible():
             prev_suppress = bool(getattr(self, "_suppress_visibility_tracking", False))
             self._suppress_visibility_tracking = True

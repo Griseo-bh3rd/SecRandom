@@ -348,6 +348,11 @@ class VoicePlaybackSystem:
         self._play_thread = None
         self._stop_flag.clear()
 
+    def is_playing(self) -> bool:
+        """返回当前是否正在播放音频（线程安全）"""
+        with self._is_playing_lock:
+            return self._is_playing
+
     def _clear_queue(self) -> None:
         """清空播放队列"""
         while not self.play_queue.empty():

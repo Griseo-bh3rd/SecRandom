@@ -76,6 +76,10 @@ DEFAULT_SETTINGS = {
         "draw_type": {"default_value": 0},
         "default_class": {"default_value": ""},
         "font_size": {"default_value": 50},
+        "reminder_text": {"default_value": "别紧张"},
+        "reminder_font_size": {"default_value": 30},
+        "reminder_text_color": {"default_value": "#808080"},
+        "reminder_text_opacity": {"default_value": 50},
         "display_format": {"default_value": 0},
         "display_style": {"default_value": 0},
         "use_global_font": {"default_value": 0},
@@ -137,6 +141,10 @@ DEFAULT_SETTINGS = {
         "draw_type": {"default_value": 0},
         "default_pool": {"default_value": ""},
         "font_size": {"default_value": 50},
+        "reminder_text": {"default_value": "别紧张"},
+        "reminder_font_size": {"default_value": 30},
+        "reminder_text_color": {"default_value": "#808080"},
+        "reminder_text_opacity": {"default_value": 50},
         "display_format": {"default_value": 0},
         "display_style": {"default_value": 0},
         "use_global_font": {"default_value": 0},
@@ -161,6 +169,9 @@ DEFAULT_SETTINGS = {
         "result_music_fade_in": {"default_value": 300},
         "animation_music_fade_out": {"default_value": 300},
         "result_music_fade_out": {"default_value": 300},
+    },
+    "music_settings": {
+        "background_music_loop": {"default_value": True},
     },
     "roll_call_list_specific_settings": {
         "overrides": {"default_value": {}},
@@ -317,6 +328,7 @@ DEFAULT_SETTINGS = {
         "speech_rate": {"default_value": 100},
         "system_volume_control": {"default_value": False},
         "system_volume_size": {"default_value": 50},
+        "voice_wait_complete": {"default_value": True},
     },
     "specific_announcements": {
         "enabled": {"default_value": True},
@@ -420,6 +432,7 @@ DEFAULT_SETTINGS = {
         "enable_avg_gap_protection": {"default_value": False},
         "gap_threshold": {"default_value": 1},
         "min_pool_size": {"default_value": 5},
+        "show_weight_transparency": {"default_value": False},
     },
     "update": {
         "auto_update_mode": {"default_value": 3},

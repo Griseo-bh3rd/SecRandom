@@ -512,49 +512,122 @@ class lottery_display_settings(GroupHeaderCardWidget):
             lambda: self._write_setting("show_tags", self.show_tags_switch.isChecked())
         )
 
+        # 权重透明化开关
+        self.show_weight_switch = SwitchButton()
+        self.show_weight_switch.setOffText(
+            get_content_switchbutton_name_async(
+                "lottery_settings", "show_weight_transparency", "disable"
+            )
+        )
+        self.show_weight_switch.setOnText(
+            get_content_switchbutton_name_async(
+                "lottery_settings", "show_weight_transparency", "enable"
+            )
+        )
+        self.show_weight_switch.setChecked(
+            bool(readme_settings_async("fair_draw_settings", "show_weight_transparency"))
+        )
+        self.show_weight_switch.checkedChanged.connect(
+            lambda: update_settings(
+                "fair_draw_settings", "show_weight_transparency",
+                self.show_weight_switch.isChecked()
+            )
+        )
+
+        # 提示语输入框
+        self.reminder_text_edit = LineEdit()
+        self.reminder_text_edit.setFixedWidth(200)
+        self.reminder_text_edit.setText(
+            self._read_setting("reminder_text", "别紧张")
+        )
+        self.reminder_text_edit.textChanged.connect(
+            lambda: self._write_setting("reminder_text", self.reminder_text_edit.text())
+        )
+
+        # 提示语字体大小输入框
+        self.reminder_font_size_spin = SpinBox()
+        self.reminder_font_size_spin.setFixedWidth(WIDTH_SPINBOX)
+        self.reminder_font_size_spin.setRange(10, 500)
+        self.reminder_font_size_spin.setSuffix("px")
+        self.reminder_font_size_spin.setValue(
+            get_safe_font_size("lottery_settings", "reminder_font_size", 30)
+            if not self._pool_name
+            else get_safe_font_size_list_specific(
+                "lottery_settings",
+                "lottery_list_specific_settings",
+                self._pool_name,
+                "reminder_font_size",
+                30,
+            )
+        )
+        self.reminder_font_size_spin.valueChanged.connect(
+            lambda: self._write_setting(
+                "reminder_font_size", self.reminder_font_size_spin.value()
+            )
+        )
+
+        self.reminder_color_button = ColorConfigItem(
+            "Theme",
+            "Color",
+            self._read_setting("reminder_text_color", "#808080"),
+        )
+        self.reminder_color_button.valueChanged.connect(
+            lambda color: self._write_setting(
+                "reminder_text_color", color.name()
+            )
+        )
+
+        self.reminder_opacity_spin = SpinBox()
+        self.reminder_opacity_spin.setFixedWidth(WIDTH_SPINBOX)
+        self.reminder_opacity_spin.setRange(0, 100)
+        self.reminder_opacity_spin.setSuffix("%")
+        self.reminder_opacity_spin.setValue(
+            int(self._read_setting("reminder_text_opacity", 50))
+        )
+        self.reminder_opacity_spin.valueChanged.connect(
+            lambda: self._write_setting(
+                "reminder_text_opacity", self.reminder_opacity_spin.value()
+            )
+        )
+
         # 添加设置项到分组
         self.addGroup(
-            get_theme_icon("ic_fluent_text_font_20_filled"),
-            get_content_name_async("lottery_settings", "use_global_font"),
-            get_content_description_async("lottery_settings", "use_global_font"),
-            self.use_global_font_combo,
+            get_theme_icon("ic_fluent_eye_20_filled"),
+            get_content_name_async("lottery_settings", "show_weight_transparency"),
+            get_content_description_async("lottery_settings", "show_weight_transparency"),
+            self.show_weight_switch,
         )
         self.addGroup(
-            get_theme_icon("ic_fluent_text_font_20_filled"),
-            get_content_name_async("lottery_settings", "custom_font"),
-            get_content_description_async("lottery_settings", "custom_font"),
-            self.custom_font_combo,
+            get_theme_icon("ic_fluent_text_font_size_20_filled"),
+            get_content_name_async("lottery_settings", "reminder_font_size"),
+            get_content_description_async(
+                "lottery_settings", "reminder_font_size"
+            ),
+            self.reminder_font_size_spin,
         )
         self.addGroup(
-            get_theme_icon("ic_fluent_text_font_20_filled"),
-            get_content_name_async("lottery_settings", "font_size"),
-            get_content_description_async("lottery_settings", "font_size"),
-            self.font_size_spin,
+            get_theme_icon("ic_fluent_text_font_size_20_filled"),
+            get_content_name_async("lottery_settings", "reminder_text_opacity"),
+            get_content_description_async(
+                "lottery_settings", "reminder_text_opacity"
+            ),
+            self.reminder_opacity_spin,
         )
-        self.addGroup(
-            get_theme_icon("ic_fluent_slide_text_sparkle_20_filled"),
-            get_content_name_async("lottery_settings", "display_format"),
-            get_content_description_async("lottery_settings", "display_format"),
-            self.display_format_combo,
+
+        self.reminderColorCard = ColorSettingCard(
+            self.reminder_color_button,
+            get_theme_icon("ic_fluent_text_color_20_filled"),
+            self.tr(
+                get_content_name_async("lottery_settings", "reminder_text_color")
+            ),
+            self.tr(
+                get_content_description_async(
+                    "lottery_settings", "reminder_text_color"
+                )
+            ),
+            self,
         )
-        self.addGroup(
-            get_theme_icon("ic_fluent_style_guide_20_filled"),
-            get_content_name_async("lottery_settings", "display_style"),
-            get_content_description_async("lottery_settings", "display_style"),
-            self.display_style_combo,
-        )
-        self.addGroup(
-            get_theme_icon("ic_fluent_slide_text_sparkle_20_filled"),
-            get_content_name_async("lottery_settings", "show_random"),
-            get_content_description_async("lottery_settings", "show_random"),
-            self.random_student_format_combo,
-        )
-        self.addGroup(
-            get_theme_icon("ic_fluent_tag_20_filled"),
-            get_content_name_async("lottery_settings", "show_tags"),
-            get_content_description_async("lottery_settings", "show_tags"),
-            self.show_tags_switch,
-        )
+        self.vBoxLayout.addWidget(self.reminderColorCard)
 
     def _read_setting(self, key: str, default=None):
         if self._pool_name:

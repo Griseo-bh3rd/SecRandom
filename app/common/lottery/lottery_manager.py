@@ -754,10 +754,12 @@ def start_lottery_draw(widget):
 
     if animation == 0:
         if animation_music:
+            loop = readme_settings_async("music_settings", "background_music_loop")
+            loop = True if loop is None else loop
             music_player.play_music(
                 music_file=animation_music,
                 settings_group="lottery_settings",
-                loop=True,
+                loop=loop,
                 fade_in=True,
             )
 
@@ -771,10 +773,12 @@ def start_lottery_draw(widget):
         widget.start_button.clicked.connect(lambda: widget.stop_animation())
     elif animation == 1:
         if animation_music:
+            loop = readme_settings_async("music_settings", "background_music_loop")
+            loop = True if loop is None else loop
             music_player.play_music(
                 music_file=animation_music,
                 settings_group="lottery_settings",
-                loop=True,
+                loop=loop,
                 fade_in=True,
             )
 
@@ -948,7 +952,6 @@ def stop_animation(widget):
             "Error disconnecting start_button clicked during stop_animation (ignored): {}",
             e,
         )
-    widget.start_button.clicked.connect(lambda: widget.start_draw())
 
     music_player.stop_music(fade_out=True)
 
@@ -968,6 +971,7 @@ def stop_animation(widget):
         ):
             widget.remaining_list_page.count_changed.emit(widget.remaining_count)
         QTimer.singleShot(APP_INIT_DELAY, widget._update_remaining_list_delayed)
+        _reconnect_after_voice(widget)
         return
 
     widget.final_selected_students = result.get("selected_prizes") or result.get(
@@ -1016,6 +1020,8 @@ def stop_animation(widget):
             draw_count=actual_draw_count,
             selected_students_dict=widget.final_selected_students_dict,
         )
+
+        _update_weight_panel(widget)
 
         settings = widget.manager.get_notification_settings(
             widget.final_pool_name, refresh=True
@@ -1090,6 +1096,49 @@ def stop_animation(widget):
             )
 
         play_voice_result(widget)
+
+    _reconnect_after_voice(widget)
+
+
+def _reconnect_after_voice(widget):
+    try:
+        voice_wait_enabled = readme_settings_async(
+            "basic_voice_settings", "voice_wait_complete"
+        )
+    except Exception:
+        voice_wait_enabled = True
+
+    if not voice_wait_enabled:
+        widget.start_button.clicked.connect(lambda: widget.start_draw())
+        return
+
+    try:
+        voice_enabled = readme_settings_async("basic_voice_settings", "voice_enable")
+    except Exception:
+        voice_enabled = False
+
+    if not voice_enabled:
+        widget.start_button.clicked.connect(lambda: widget.start_draw())
+        return
+
+    if not hasattr(widget, "tts_handler") or widget.tts_handler is None:
+        widget.start_button.clicked.connect(lambda: widget.start_draw())
+        return
+
+    QTimer.singleShot(200, lambda: _poll_voice_completion(widget))
+
+
+def _poll_voice_completion(widget, poll_count=0):
+    if not widget.tts_handler.playback_system.is_playing():
+        widget.start_button.clicked.connect(lambda: widget.start_draw())
+        return
+
+    if poll_count > 300:
+        logger.warning("Voice playback timeout, reconnecting start button anyway")
+        widget.start_button.clicked.connect(lambda: widget.start_draw())
+        return
+
+    QTimer.singleShot(100, lambda: _poll_voice_completion(widget, poll_count + 1))
 
 
 def play_voice_result(widget):
@@ -1651,3 +1700,27 @@ def on_class_changed(widget, *_):
     finally:
         widget.range_combobox.blockSignals(False)
         widget.gender_combobox.blockSignals(False)
+
+
+def _update_weight_panel(widget):
+    """更新权重透明化面板"""
+    try:
+        if not readme_settings_async("fair_draw_settings", "show_weight_transparency"):
+            if hasattr(widget, "weight_panel"):
+                widget.weight_panel.clear()
+                widget.weight_panel.setVisible(False)
+            return
+
+        students_with_weight = []
+        for prize in (widget.final_selected_students_dict or []):
+            if not isinstance(prize, dict):
+                continue
+            student = prize.get("student")
+            if isinstance(student, dict) and "weight_details" in student:
+                students_with_weight.append(student)
+
+        if hasattr(widget, "weight_panel") and students_with_weight:
+            widget.weight_panel.set_students(students_with_weight)
+            widget.weight_panel.setVisible(True)
+    except Exception as e:
+        logger.exception(f"更新权重面板失败: {e}")

@@ -73,6 +73,22 @@ roll_call_settings = {
             "description": "设置默认抽取名单",
         },
         "font_size": {"name": "字体大小", "description": "设置点名结果字体大小"},
+        "reminder_text": {
+            "name": "抽取前/清空后提示语",
+            "description": "设置抽取前和清空后显示的提示文字",
+        },
+        "reminder_font_size": {
+            "name": "提示语字体大小",
+            "description": "设置提示语文字的字体大小",
+        },
+        "reminder_text_color": {
+            "name": "提示语颜色",
+            "description": "设置提示语文字的颜色",
+        },
+        "reminder_text_opacity": {
+            "name": "提示语透明度",
+            "description": "设置提示语文字的透明度（0-100）",
+        },
         "use_global_font": {
             "name": "使用全局字体",
             "description": "是否使用全局字体设置",
@@ -143,6 +159,11 @@ roll_call_settings = {
         "open_student_image_folder": {
             "name": "学生图片文件夹",
             "description": "管理学生图片文件，图片文件名需与学生姓名一致",
+        },
+        "show_weight_transparency": {
+            "name": "权重透明化",
+            "description": "在抽取结果界面展示每位参与者的权重明细",
+            "switchbutton_name": {"enable": "", "disable": ""},
         },
     },
     "EN_US": {
@@ -220,6 +241,22 @@ roll_call_settings = {
         "font_size": {
             "name": "Font size",
             "description": "Set picking result font size",
+        },
+        "reminder_text": {
+            "name": "Reminder text",
+            "description": "Text displayed before the draw and after resetting",
+        },
+        "reminder_font_size": {
+            "name": "Reminder font size",
+            "description": "Font size for the reminder text",
+        },
+        "reminder_text_color": {
+            "name": "Reminder color",
+            "description": "Color of the reminder text",
+        },
+        "reminder_text_opacity": {
+            "name": "Reminder opacity",
+            "description": "Opacity of the reminder text (0-100)",
         },
         "use_global_font": {
             "name": "Use global font",
@@ -306,6 +343,11 @@ roll_call_settings = {
             "name": "Default class",
             "description": "Set the default class to use for drawing",
         },
+        "show_weight_transparency": {
+            "name": "Weight Transparency",
+            "description": "Show weight details for each participant on the result interface",
+            "switchbutton_name": {"enable": "", "disable": ""},
+        },
     },
     "JA_JP": {
         "title": {"name": "点呼設定", "description": "点呼機能設定"},
@@ -382,6 +424,22 @@ roll_call_settings = {
         "font_size": {
             "name": "フォントサイズ",
             "description": "点呼結果のフォントサイズを設定",
+        },
+        "reminder_text": {
+            "name": "リマインダーテキスト",
+            "description": "抽選前とリセット後に表示するテキスト",
+        },
+        "reminder_font_size": {
+            "name": "リマインダーフォントサイズ",
+            "description": "リマインダーテキストのフォントサイズ",
+        },
+        "reminder_text_color": {
+            "name": "リマインダー色",
+            "description": "リマインダーテキストの色",
+        },
+        "reminder_text_opacity": {
+            "name": "リマインダー透明度",
+            "description": "リマインダーテキストの透明度（0-100）",
         },
         "use_global_font": {
             "name": "グローバルフォントを使用",
@@ -969,6 +1027,22 @@ lottery_settings = {
             "description": "设置默认使用的抽取名单",
         },
         "font_size": {"name": "字体大小", "description": "设置抽奖结果字体大小"},
+        "reminder_text": {
+            "name": "抽取前/清空后提示语",
+            "description": "设置抽取前和清空后显示的提示文字",
+        },
+        "reminder_font_size": {
+            "name": "提示语字体大小",
+            "description": "设置提示语文字的字体大小",
+        },
+        "reminder_text_color": {
+            "name": "提示语颜色",
+            "description": "设置提示语文字的颜色",
+        },
+        "reminder_text_opacity": {
+            "name": "提示语透明度",
+            "description": "设置提示语文字的透明度（0-100）",
+        },
         "use_global_font": {
             "name": "使用全局字体",
             "description": "是否使用全局字体设置",
@@ -1048,6 +1122,11 @@ lottery_settings = {
             "name": "奖品图片文件夹",
             "description": "管理奖品图片文件，图片文件名需与奖品名称一致",
         },
+        "show_weight_transparency": {
+            "name": "权重透明化",
+            "description": "在抽取结果界面展示每位参与者的权重明细",
+            "switchbutton_name": {"enable": "", "disable": ""},
+        },
     },
     "EN_US": {
         "title": {"name": "Lottery settings", "description": "Lottery settings"},
@@ -1124,6 +1203,22 @@ lottery_settings = {
         "font_size": {
             "name": "Font size",
             "description": "Set the lottery result font size",
+        },
+        "reminder_text": {
+            "name": "Reminder text",
+            "description": "Text displayed before the draw and after resetting",
+        },
+        "reminder_font_size": {
+            "name": "Reminder font size",
+            "description": "Font size for the reminder text",
+        },
+        "reminder_text_color": {
+            "name": "Reminder color",
+            "description": "Color of the reminder text",
+        },
+        "reminder_text_opacity": {
+            "name": "Reminder opacity",
+            "description": "Opacity of the reminder text (0-100)",
         },
         "use_global_font": {
             "name": "Use global font",
@@ -1228,6 +1323,11 @@ lottery_settings = {
             "name": "Default pool",
             "description": "Set the default pool to use for drawing",
         },
+        "show_weight_transparency": {
+            "name": "Weight Transparency",
+            "description": "Show weight details for each participant on the result interface",
+            "switchbutton_name": {"enable": "", "disable": ""},
+        },
     },
     "JA_JP": {
         "title": {"name": "抽選設定", "description": "抽選機能設定"},
@@ -1304,6 +1404,22 @@ lottery_settings = {
         "font_size": {
             "name": "フォントサイズ",
             "description": "抽選結果のフォントサイズを設定",
+        },
+        "reminder_text": {
+            "name": "リマインダーテキスト",
+            "description": "抽選前とリセット後に表示するテキスト",
+        },
+        "reminder_font_size": {
+            "name": "リマインダーフォントサイズ",
+            "description": "リマインダーテキストのフォントサイズ",
+        },
+        "reminder_text_color": {
+            "name": "リマインダー色",
+            "description": "リマインダーテキストの色",
+        },
+        "reminder_text_opacity": {
+            "name": "リマインダー透明度",
+            "description": "リマインダーテキストの透明度（0-100）",
         },
         "use_global_font": {
             "name": "グローバルフォントを使用",
