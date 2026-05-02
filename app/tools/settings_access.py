@@ -257,7 +257,7 @@ def update_settings(first_level_key: str, second_level_key: str, value: Any):
             first_level_key, second_level_key, value
         )
     except Exception as e:
-        logger.warning(f"设置更新失败: {e}")
+        logger.exception(f"设置更新失败: {e}")
 
 
 def get_or_create_user_id():

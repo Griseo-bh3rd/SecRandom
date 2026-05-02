@@ -366,7 +366,7 @@ class FileOperations:
                 return True
             return False
         except Exception as e:
-            logger.warning(f"删除文件失败: {path}, 错误: {e}")
+            logger.exception(f"删除文件失败: {path}, 错误: {e}")
             return False
 
 
