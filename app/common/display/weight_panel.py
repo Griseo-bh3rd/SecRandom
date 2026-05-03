@@ -1,4 +1,10 @@
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QHeaderView, QFrame, QAbstractItemView
+from PySide6.QtWidgets import (
+    QVBoxLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QFrame,
+    QAbstractItemView,
+)
 from PySide6.QtGui import QColor, QStandardItemModel, QStandardItem
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
 from qfluentwidgets import TableView, ToolButton, BodyLabel
@@ -9,13 +15,18 @@ from app.Language.obtain_language import get_content_name_async
 
 
 _COLUMNS = [
-    "wp_col_student", "wp_col_base", "wp_col_freq", "wp_col_group",
-    "wp_col_gender", "wp_col_time", "wp_col_shield", "wp_col_total",
+    "wp_col_student",
+    "wp_col_base",
+    "wp_col_freq",
+    "wp_col_group",
+    "wp_col_gender",
+    "wp_col_time",
+    "wp_col_shield",
+    "wp_col_total",
 ]
 
 
 class WeightPanel(QFrame):
-
     _DEFAULT_SETTINGS_GROUP = "lottery_settings"
     _HEADER_HEIGHT = 34
     _EXPANDED_MAX = 300
@@ -41,7 +52,9 @@ class WeightPanel(QFrame):
         header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
 
-        self._collapse_btn = ToolButton(get_theme_icon("ic_fluent_chevron_right_20_filled"), self)
+        self._collapse_btn = ToolButton(
+            get_theme_icon("ic_fluent_chevron_right_20_filled"), self
+        )
         self._collapse_btn.setFixedSize(28, 28)
         self._collapse_btn.setToolTip(self._t("wp_expand"))
         self._collapse_btn.clicked.connect(self.toggle_collapse)
@@ -51,7 +64,9 @@ class WeightPanel(QFrame):
         header.addWidget(self._title_label)
         header.addStretch()
 
-        self._help_btn = ToolButton(get_theme_icon("ic_fluent_question_circle_20_filled"), self)
+        self._help_btn = ToolButton(
+            get_theme_icon("ic_fluent_question_circle_20_filled"), self
+        )
         self._help_btn.setFixedSize(28, 28)
         self._help_btn.setToolTip(self._t("wp_help"))
         self._help_btn.clicked.connect(self._show_formula_dialog)
@@ -96,7 +111,9 @@ class WeightPanel(QFrame):
                 f"{details.get('group_balance', 0):.2f}",
                 f"{details.get('gender_balance', 0):.2f}",
                 f"{details.get('time_factor', 0):.2f}",
-                self._t("wp_shielded") if details.get("is_shielded") else self._t("wp_normal"),
+                self._t("wp_shielded")
+                if details.get("is_shielded")
+                else self._t("wp_normal"),
                 f"{details.get('total_weight', student.get('next_weight', 0)):.2f}",
             ]
 
@@ -116,15 +133,22 @@ class WeightPanel(QFrame):
         self._collapsed = not self._collapsed
         self._table.setVisible(not self._collapsed)
         if self._collapsed:
-            self._collapse_btn.setIcon(get_theme_icon("ic_fluent_chevron_right_20_filled"))
+            self._collapse_btn.setIcon(
+                get_theme_icon("ic_fluent_chevron_right_20_filled")
+            )
             self._collapse_btn.setToolTip(self._t("wp_expand"))
         else:
-            self._collapse_btn.setIcon(get_theme_icon("ic_fluent_chevron_down_20_filled"))
+            self._collapse_btn.setIcon(
+                get_theme_icon("ic_fluent_chevron_down_20_filled")
+            )
             self._collapse_btn.setToolTip(self._t("wp_collapse"))
         self._animate()
 
     def _animate(self):
-        if self._anim is not None and self._anim.state() == QPropertyAnimation.State.Running:
+        if (
+            self._anim is not None
+            and self._anim.state() == QPropertyAnimation.State.Running
+        ):
             self._anim.stop()
         target = self._HEADER_HEIGHT if self._collapsed else self._EXPANDED_MAX
         self._anim = QPropertyAnimation(self, b"maximumHeight")
@@ -137,6 +161,7 @@ class WeightPanel(QFrame):
     def _show_formula_dialog(self):
         logger.debug("打开权重计算规则弹窗")
         from app.page_building.another_window import create_weight_formula_window
+
         create_weight_formula_window(parent=None, settings_group=self._settings_group)
 
     def clear(self):
@@ -145,7 +170,9 @@ class WeightPanel(QFrame):
             self.toggle_collapse()
 
 
-def create_weight_panel(students_data: list, parent=None, settings_group=None) -> WeightPanel:
+def create_weight_panel(
+    students_data: list, parent=None, settings_group=None
+) -> WeightPanel:
     panel = WeightPanel(parent, settings_group=settings_group)
     panel.set_students(students_data)
     return panel

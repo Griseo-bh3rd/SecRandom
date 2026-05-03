@@ -1714,7 +1714,7 @@ def _update_weight_panel(widget):
             return
 
         students_with_weight = []
-        for prize in (widget.final_selected_students_dict or []):
+        for prize in widget.final_selected_students_dict or []:
             if not isinstance(prize, dict):
                 continue
             student = prize.get("student")
@@ -1725,19 +1725,28 @@ def _update_weight_panel(widget):
 
         # lottery 结果中 student 来自 roll_call_utils，通常已有 weight_details
         # 如果没有，尝试计算
-        if students_with_weight and "weight_details" not in (students_with_weight[0] or {}):
+        if students_with_weight and "weight_details" not in (
+            students_with_weight[0] or {}
+        ):
             class_name = getattr(widget, "final_class_name", None) or getattr(
                 widget.manager, "current_class_name", ""
             )
             if class_name:
                 from app.common.history import calculate_weight
-                students_with_weight = calculate_weight(students_with_weight, class_name)
-                logger.debug(f"权重面板(Lottery)：已计算 {len(students_with_weight)} 个学生权重")
+
+                students_with_weight = calculate_weight(
+                    students_with_weight, class_name
+                )
+                logger.debug(
+                    f"权重面板(Lottery)：已计算 {len(students_with_weight)} 个学生权重"
+                )
 
         if hasattr(widget, "weight_panel") and students_with_weight:
             widget.weight_panel.set_students(students_with_weight)
             widget.weight_panel.setVisible(True)
-            logger.debug(f"权重面板(Lottery)已更新，展示 {len(students_with_weight)} 个学生")
+            logger.debug(
+                f"权重面板(Lottery)已更新，展示 {len(students_with_weight)} 个学生"
+            )
         else:
             logger.debug(
                 f"权重面板(Lottery)未显示: has_panel={hasattr(widget, 'weight_panel')}, "

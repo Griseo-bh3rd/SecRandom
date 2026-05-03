@@ -529,17 +529,14 @@ class lottery_display_settings(GroupHeaderCardWidget):
         )
         self.show_weight_switch.checkedChanged.connect(
             lambda: self._write_setting(
-                "show_weight_transparency",
-                self.show_weight_switch.isChecked()
+                "show_weight_transparency", self.show_weight_switch.isChecked()
             )
         )
 
         # 提示语输入框
         self.reminder_text_edit = LineEdit()
         self.reminder_text_edit.setFixedWidth(200)
-        self.reminder_text_edit.setText(
-            self._read_setting("reminder_text", "别紧张")
-        )
+        self.reminder_text_edit.setText(self._read_setting("reminder_text", "别紧张"))
         self.reminder_text_edit.textChanged.connect(
             lambda: self._write_setting("reminder_text", self.reminder_text_edit.text())
         )
@@ -572,9 +569,7 @@ class lottery_display_settings(GroupHeaderCardWidget):
             self._read_setting("reminder_text_color", "#808080"),
         )
         self.reminder_color_button.valueChanged.connect(
-            lambda color: self._write_setting(
-                "reminder_text_color", color.name()
-            )
+            lambda color: self._write_setting("reminder_text_color", color.name())
         )
 
         self.reminder_opacity_spin = SpinBox()
@@ -636,36 +631,30 @@ class lottery_display_settings(GroupHeaderCardWidget):
         self.addGroup(
             get_theme_icon("ic_fluent_eye_20_filled"),
             get_content_name_async("lottery_settings", "show_weight_transparency"),
-            get_content_description_async("lottery_settings", "show_weight_transparency"),
+            get_content_description_async(
+                "lottery_settings", "show_weight_transparency"
+            ),
             self.show_weight_switch,
         )
         self.addGroup(
             get_theme_icon("ic_fluent_text_font_size_20_filled"),
             get_content_name_async("lottery_settings", "reminder_font_size"),
-            get_content_description_async(
-                "lottery_settings", "reminder_font_size"
-            ),
+            get_content_description_async("lottery_settings", "reminder_font_size"),
             self.reminder_font_size_spin,
         )
         self.addGroup(
             get_theme_icon("ic_fluent_text_font_size_20_filled"),
             get_content_name_async("lottery_settings", "reminder_text_opacity"),
-            get_content_description_async(
-                "lottery_settings", "reminder_text_opacity"
-            ),
+            get_content_description_async("lottery_settings", "reminder_text_opacity"),
             self.reminder_opacity_spin,
         )
 
         self.reminderColorCard = ColorSettingCard(
             self.reminder_color_button,
             get_theme_icon("ic_fluent_text_color_20_filled"),
+            self.tr(get_content_name_async("lottery_settings", "reminder_text_color")),
             self.tr(
-                get_content_name_async("lottery_settings", "reminder_text_color")
-            ),
-            self.tr(
-                get_content_description_async(
-                    "lottery_settings", "reminder_text_color"
-                )
+                get_content_description_async("lottery_settings", "reminder_text_color")
             ),
             self,
         )

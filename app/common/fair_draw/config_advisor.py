@@ -22,6 +22,7 @@ def _safe_read(group: str, key: str, default: Any = None) -> Any:
 def get_draw_count() -> int:
     try:
         from app.core.app_init import calculate_total_draw_counts
+
         _, roll_call_total, _ = calculate_total_draw_counts()
         return roll_call_total
     except Exception:
@@ -39,10 +40,19 @@ BOOLEAN_RULES = [
 ]
 
 NUMERIC_KEYS = [
-    "gap_threshold", "min_pool_size", "cold_start_rounds",
-    "shield_time", "frequency_function", "frequency_weight",
-    "group_weight", "gender_weight", "time_weight",
-    "base_weight", "min_weight", "max_weight", "shield_time_unit",
+    "gap_threshold",
+    "min_pool_size",
+    "cold_start_rounds",
+    "shield_time",
+    "frequency_function",
+    "frequency_weight",
+    "group_weight",
+    "gender_weight",
+    "time_weight",
+    "base_weight",
+    "min_weight",
+    "max_weight",
+    "shield_time_unit",
 ]
 
 
@@ -76,14 +86,19 @@ def load_roll_call_history():
             rounds_missed = info.get("rounds_missed", 0)
             last_drawn = info.get("last_drawn_time", "")
             student_meta[name] = {
-                "rounds_missed": max(student_meta.get(name, {}).get("rounds_missed", 0), rounds_missed),
-                "last_drawn": last_drawn or student_meta.get(name, {}).get("last_drawn", ""),
+                "rounds_missed": max(
+                    student_meta.get(name, {}).get("rounds_missed", 0), rounds_missed
+                ),
+                "last_drawn": last_drawn
+                or student_meta.get(name, {}).get("last_drawn", ""),
             }
 
             if info.get("group"):
                 total_groups[info["group"]] = total_groups.get(info["group"], 0) + count
             if info.get("gender"):
-                total_genders[info["gender"]] = total_genders.get(info["gender"], 0) + count
+                total_genders[info["gender"]] = (
+                    total_genders.get(info["gender"], 0) + count
+                )
 
             for s in sessions:
                 t = s.get("draw_time", "")
@@ -119,7 +134,7 @@ def compute_fairness_metrics(stats):
     total = sum(counts)
     mean = total / n
     variance = sum((c - mean) ** 2 for c in counts) / n
-    std_dev = round(variance ** 0.5, 2)
+    std_dev = round(variance**0.5, 2)
     max_val = max(counts)
     min_val = min(counts)
     gap = max_val - min_val
@@ -184,18 +199,26 @@ def compute_recommended_values(metrics):
     gap = metrics.get("gap", 0)
 
     v["gap_threshold"] = max(1, min(10, int(std_dev) + 1))
-    r["gap_threshold"] = f"标准差为 {std_dev}，最大-最小差距为 {gap}，建议差值阈值设为 {v['gap_threshold']}"
+    r["gap_threshold"] = (
+        f"标准差为 {std_dev}，最大-最小差距为 {gap}，建议差值阈值设为 {v['gap_threshold']}"
+    )
 
     v["min_pool_size"] = max(3, min(n, int(n * 0.25)))
-    r["min_pool_size"] = f"共 {n} 人参与，建议候选池最少保留 {v['min_pool_size']} 人以保证多样性"
+    r["min_pool_size"] = (
+        f"共 {n} 人参与，建议候选池最少保留 {v['min_pool_size']} 人以保证多样性"
+    )
 
     v["cold_start_rounds"] = max(10, max_missed + 5)
-    r["cold_start_rounds"] = f"最大遗漏 {max_missed} 轮，{zeros} 人从未被抽中，建议冷启动保护 {v['cold_start_rounds']} 轮"
+    r["cold_start_rounds"] = (
+        f"最大遗漏 {max_missed} 轮，{zeros} 人从未被抽中，建议冷启动保护 {v['cold_start_rounds']} 轮"
+    )
 
     daily_draws = total_draws / days_span
     interval_sec = 86400 / max(daily_draws, 0.01)
     v["shield_time"] = round(max(3.0, min(60.0, interval_sec * 0.3)), 1)
-    r["shield_time"] = f"日均抽取 {daily_draws:.1f} 次，建议屏蔽时间 {v['shield_time']} 秒避免重复"
+    r["shield_time"] = (
+        f"日均抽取 {daily_draws:.1f} 次，建议屏蔽时间 {v['shield_time']} 秒避免重复"
+    )
 
     if std_dev <= 1:
         v["frequency_function"] = 0
@@ -206,28 +229,42 @@ def compute_recommended_values(metrics):
     else:
         v["frequency_function"] = 2
         fn_name = "指数"
-    r["frequency_function"] = f"标准差为 {std_dev}，分布{'均匀' if std_dev <= 1 else '适中' if std_dev <= 3 else '不均'}，建议使用{fn_name}惩罚函数"
+    r["frequency_function"] = (
+        f"标准差为 {std_dev}，分布{'均匀' if std_dev <= 1 else '适中' if std_dev <= 3 else '不均'}，建议使用{fn_name}惩罚函数"
+    )
 
     v["frequency_weight"] = round(max(0.5, min(10.0, std_dev * 0.8)), 2)
-    r["frequency_weight"] = f"基于标准差 {std_dev}，建议频率惩罚权重设为 {v['frequency_weight']}"
+    r["frequency_weight"] = (
+        f"基于标准差 {std_dev}，建议频率惩罚权重设为 {v['frequency_weight']}"
+    )
 
     v["group_weight"] = round(max(0.3, min(3.0, 0.8 * group_imb)), 2)
-    r["group_weight"] = f"小组不均衡指数 {group_imb}，建议小组权重调整为 {v['group_weight']}"
+    r["group_weight"] = (
+        f"小组不均衡指数 {group_imb}，建议小组权重调整为 {v['group_weight']}"
+    )
 
     v["gender_weight"] = round(max(0.3, min(3.0, 0.8 * gender_imb)), 2)
-    r["gender_weight"] = f"性别不均衡指数 {gender_imb}，建议性别权重调整为 {v['gender_weight']}"
+    r["gender_weight"] = (
+        f"性别不均衡指数 {gender_imb}，建议性别权重调整为 {v['gender_weight']}"
+    )
 
     v["time_weight"] = round(max(0.2, min(3.0, 0.3 + max_missed * 0.05)), 2)
-    r["time_weight"] = f"最大遗漏 {max_missed} 轮，建议时间权重因子设为 {v['time_weight']}"
+    r["time_weight"] = (
+        f"最大遗漏 {max_missed} 轮，建议时间权重因子设为 {v['time_weight']}"
+    )
 
     v["base_weight"] = 1.0
     r["base_weight"] = "基础权重保持默认值 1.0"
 
     v["min_weight"] = round(max(0.1, min(1.0, 0.5 - std_dev * 0.05)), 2)
-    r["min_weight"] = f"标准差 {std_dev}，为避免权重过低，建议最小值设为 {v['min_weight']}"
+    r["min_weight"] = (
+        f"标准差 {std_dev}，为避免权重过低，建议最小值设为 {v['min_weight']}"
+    )
 
     v["max_weight"] = round(max(2.0, min(20.0, 3.0 + std_dev * 1.5)), 2)
-    r["max_weight"] = f"标准差 {std_dev}，为控制权重上限，建议最大值设为 {v['max_weight']}"
+    r["max_weight"] = (
+        f"标准差 {std_dev}，为控制权重上限，建议最大值设为 {v['max_weight']}"
+    )
 
     v["shield_time_unit"] = 0
     r["shield_time_unit"] = "屏蔽时间单位保持默认值"
@@ -239,11 +276,15 @@ def compute_recommended_values(metrics):
 def get_simple_recommendations() -> list:
     recs = []
     for group, key, recommended, reason_key in BOOLEAN_RULES:
-        recs.append({
-            "group": group, "key": key,
-            "current": False if isinstance(recommended, bool) else 0,
-            "recommended": recommended, "reason_key": reason_key,
-        })
+        recs.append(
+            {
+                "group": group,
+                "key": key,
+                "current": False if isinstance(recommended, bool) else 0,
+                "recommended": recommended,
+                "reason_key": reason_key,
+            }
+        )
 
     stats = load_roll_call_history()
     metrics = compute_fairness_metrics(stats)
@@ -251,13 +292,15 @@ def get_simple_recommendations() -> list:
     reasons = computed.get("_reasons", {})
 
     for key in NUMERIC_KEYS:
-        recs.append({
-            "group": "fair_draw_settings",
-            "key": key,
-            "current": 0,
-            "recommended": computed.get(key, 0),
-            "reason_text": reasons.get(key, ""),
-        })
+        recs.append(
+            {
+                "group": "fair_draw_settings",
+                "key": key,
+                "current": 0,
+                "recommended": computed.get(key, 0),
+                "reason_text": reasons.get(key, ""),
+            }
+        )
     return recs
 
 
@@ -268,11 +311,15 @@ def get_recommendations() -> list:
         if current is None:
             continue
         if current != recommended:
-            recs.append({
-                "group": group, "key": key,
-                "current": current, "recommended": recommended,
-                "reason_key": reason_key,
-            })
+            recs.append(
+                {
+                    "group": group,
+                    "key": key,
+                    "current": current,
+                    "recommended": recommended,
+                    "reason_key": reason_key,
+                }
+            )
 
     stats = load_roll_call_history()
     metrics = compute_fairness_metrics(stats)
@@ -285,11 +332,13 @@ def get_recommendations() -> list:
             continue
         rec_val = computed.get(key)
         if rec_val is not None and current != rec_val:
-            recs.append({
-                "group": "fair_draw_settings",
-                "key": key,
-                "current": current,
-                "recommended": rec_val,
-                "reason_text": reasons.get(key, ""),
-            })
+            recs.append(
+                {
+                    "group": "fair_draw_settings",
+                    "key": key,
+                    "current": current,
+                    "recommended": rec_val,
+                    "reason_text": reasons.get(key, ""),
+                }
+            )
     return recs

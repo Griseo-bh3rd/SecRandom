@@ -2,7 +2,7 @@
 # 导入库
 # ==================================================
 
-from PySide6.QtCore import QTimer, Signal, QObject, Qt
+from PySide6.QtCore import QTimer, QObject
 from loguru import logger
 
 from app.common.data.list import *

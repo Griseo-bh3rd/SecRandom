@@ -528,7 +528,9 @@ class SettingsWindow(FluentWindow):
         else:
             logger.debug(f"设置窗口转发主页面请求: {page_name}")
             host_window = getattr(self, "_host_window", None)
-            if host_window is not None and hasattr(host_window, "_handle_main_page_requested"):
+            if host_window is not None and hasattr(
+                host_window, "_handle_main_page_requested"
+            ):
                 host_window._handle_main_page_requested(page_name)
 
     def _handle_settings_page_request(self, page_name: str):

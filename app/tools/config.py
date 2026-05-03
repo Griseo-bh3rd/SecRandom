@@ -153,13 +153,17 @@ def create_sentry_before_send_filter():
                 if type_ == "KeyboardInterrupt":
                     return None
 
-                if type_ == "ModuleNotFoundError" and "PySide6.QtMultimedia" in str(value):
+                if type_ == "ModuleNotFoundError" and "PySide6.QtMultimedia" in str(
+                    value
+                ):
                     return None
 
                 if type_ == "OSError" and _is_benign_oserror(module, value):
                     return None
 
-                if type_ == "ValueError" and "generator already executing" in str(value):
+                if type_ == "ValueError" and "generator already executing" in str(
+                    value
+                ):
                     return None
 
                 if type_ == "error" and "GetCursorPos" in str(value):

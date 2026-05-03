@@ -479,17 +479,14 @@ class roll_call_display_settings(GroupHeaderCardWidget):
         )
         self.show_weight_switch.checkedChanged.connect(
             lambda: self._write_setting(
-                "show_weight_transparency",
-                self.show_weight_switch.isChecked()
+                "show_weight_transparency", self.show_weight_switch.isChecked()
             )
         )
 
         # 提示语输入框
         self.reminder_text_edit = LineEdit()
         self.reminder_text_edit.setFixedWidth(200)
-        self.reminder_text_edit.setText(
-            self._read_setting("reminder_text", "别紧张")
-        )
+        self.reminder_text_edit.setText(self._read_setting("reminder_text", "别紧张"))
         self.reminder_text_edit.textChanged.connect(
             lambda: self._write_setting("reminder_text", self.reminder_text_edit.text())
         )
@@ -522,9 +519,7 @@ class roll_call_display_settings(GroupHeaderCardWidget):
             self._read_setting("reminder_text_color", "#808080"),
         )
         self.reminder_color_button.valueChanged.connect(
-            lambda color: self._write_setting(
-                "reminder_text_color", color.name()
-            )
+            lambda color: self._write_setting("reminder_text_color", color.name())
         )
 
         self.reminder_opacity_spin = SpinBox()
@@ -586,7 +581,9 @@ class roll_call_display_settings(GroupHeaderCardWidget):
         self.addGroup(
             get_theme_icon("ic_fluent_eye_20_filled"),
             get_content_name_async("roll_call_settings", "show_weight_transparency"),
-            get_content_description_async("roll_call_settings", "show_weight_transparency"),
+            get_content_description_async(
+                "roll_call_settings", "show_weight_transparency"
+            ),
             self.show_weight_switch,
         )
         self.addGroup(

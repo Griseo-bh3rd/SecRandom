@@ -633,9 +633,7 @@ class basic_settings_telemetry(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle(
-            get_content_name_async("basic_settings", "telemetry_category")
-        )
+        self.setTitle(get_content_name_async("basic_settings", "telemetry_category"))
         self.setBorderRadius(8)
 
         # 遥测开关（主开关）
@@ -646,9 +644,7 @@ class basic_settings_telemetry(GroupHeaderCardWidget):
             )
         )
         self.telemetry_switch.setOnText(
-            get_content_switchbutton_name_async(
-                "basic_settings", "telemetry", "enable"
-            )
+            get_content_switchbutton_name_async("basic_settings", "telemetry", "enable")
         )
         self.telemetry_switch.setChecked(
             readme_settings_async("basic_settings", "telemetry_enabled") is not False
@@ -667,7 +663,9 @@ class basic_settings_telemetry(GroupHeaderCardWidget):
         self.telemetry_mode_combo.addItems(
             get_content_combo_name_async("basic_settings", "telemetry_mode")
         )
-        current_mode = readme_settings_async("basic_settings", "telemetry_mode") or "full"
+        current_mode = (
+            readme_settings_async("basic_settings", "telemetry_mode") or "full"
+        )
         try:
             self.telemetry_mode_combo.setCurrentIndex(self._MODES.index(current_mode))
         except ValueError:

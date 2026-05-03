@@ -379,7 +379,8 @@ def create_ultralight_net(*, model_path: Path):
                 try:
                     needs_copy = (
                         temp_path.stat().st_size != model_path.stat().st_size
-                        or int(temp_path.stat().st_mtime) != int(model_path.stat().st_mtime)
+                        or int(temp_path.stat().st_mtime)
+                        != int(model_path.stat().st_mtime)
                     )
                 except Exception:
                     needs_copy = True

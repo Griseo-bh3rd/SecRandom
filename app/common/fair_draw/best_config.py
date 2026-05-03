@@ -26,7 +26,6 @@ def _get_fair_draw_defaults():
 
 
 class BestConfigCard(GroupHeaderCardWidget):
-
     analyze_clicked = Signal()
     reset_applied = Signal()
 
@@ -92,8 +91,8 @@ class BestConfigCard(GroupHeaderCardWidget):
             self._tr("reset_confirm_content"),
             self.window(),
         )
-        dialog.yesButton.setText("确认")
-        dialog.cancelButton.setText("取消")
+        dialog.yesButton.setText(self._tr("confirm_btn"))
+        dialog.cancelButton.setText(self._tr("cancel_btn"))
 
         if dialog.exec():
             for key, value in _get_fair_draw_defaults().items():

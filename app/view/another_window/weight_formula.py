@@ -1,5 +1,4 @@
 from PySide6.QtWidgets import QVBoxLayout, QTextEdit, QWidget
-from PySide6.QtCore import Qt
 
 from app.Language.obtain_language import get_content_name_async
 

@@ -6,7 +6,6 @@ SECTL 在线状态上报模块
 服务端会根据 last_active 时间判断用户是否在线（5分钟内活跃视为在线）。
 """
 
-import json
 import re
 import uuid
 import socket
@@ -68,26 +67,21 @@ def _get_local_ip() -> str:
 
 def _get_public_ip(timeout_seconds: float = 5.0) -> Optional[str]:
     services = [
-        "https://321260.xyz/api/ip.php", # v4出口网络
+        "https://321260.xyz/api/ip.php",  # v4出口网络 (优先)
+        "https://ddns.oray.com/checkip",
+        "http://v4.66666.host:66/ip",
+        "https://myip.ipip.net",
     ]
 
     for service in services:
         try:
-            logger.debug(f"获取公网IP: {service}")
             response = requests.get(service, timeout=timeout_seconds)
             if response.status_code == 200:
                 text = response.text.strip()
                 match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", text)
                 if match:
-                    ip = match.group(0)
-                    logger.debug(f"公网IP获取成功: {service} → {ip}")
-                    return ip
-                else:
-                    logger.debug(f"公网IP解析失败: {service}, 响应: {text[:80]}")
-            else:
-                logger.debug(f"公网IP请求失败: {service}, HTTP {response.status_code}")
-        except Exception as e:
-            logger.debug(f"公网IP异常: {service}, {e}")
+                    return match.group(0)
+        except Exception:
             continue
 
     logger.warning("所有公网IP服务均获取失败")
@@ -95,7 +89,14 @@ def _get_public_ip(timeout_seconds: float = 5.0) -> Optional[str]:
 
 
 def _get_ip_location(ip: str, timeout_seconds: float = 10.0) -> Dict[str, Any]:
-    if not ip or ip == "unknown" or ip.startswith("127.") or ip == "localhost" or ip.startswith("192.168.") or ip.startswith("10."):
+    if (
+        not ip
+        or ip == "unknown"
+        or ip.startswith("127.")
+        or ip == "localhost"
+        or ip.startswith("192.168.")
+        or ip.startswith("10.")
+    ):
         return {
             "country": "本地",
             "province": "本地",
@@ -115,12 +116,15 @@ def _get_ip_location(ip: str, timeout_seconds: float = 10.0) -> Dict[str, Any]:
         data = response.json()
 
         if data.get("ip"):
-            region_parts = [p.strip() for p in (data.get("region") or "").split(" ") if p.strip()]
+            region_parts = [
+                p.strip() for p in (data.get("region") or "").split(" ") if p.strip()
+            ]
             return {
                 "country": region_parts[0] if len(region_parts) > 0 else "未知",
                 "province": region_parts[1] if len(region_parts) > 1 else "未知",
                 "city": region_parts[2] if len(region_parts) > 2 else "未知",
-                "district": data.get("district") or (region_parts[3] if len(region_parts) > 3 else "未知"),
+                "district": data.get("district")
+                or (region_parts[3] if len(region_parts) > 3 else "未知"),
             }
         else:
             raise Exception(f"IP lookup failed: {data.get('msg', 'Unknown error')}")
@@ -140,6 +144,7 @@ def _load_or_create_device_uuid() -> str:
 
     device_uuid = str(uuid.uuid4()).lower()
     from app.tools.settings_access import update_settings
+
     update_settings("basic_settings", "offline_user_id", device_uuid)
     return device_uuid
 
@@ -197,7 +202,9 @@ def _do_report(
         if response.status_code >= 400:
             try:
                 error_data = response.json()
-                logger.warning(f"上报在线状态失败: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}")
+                logger.warning(
+                    f"上报在线状态失败: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                )
             except Exception:
                 logger.warning(f"上报在线状态失败: HTTP {response.status_code}")
             return {"success": False, "error": "request_failed"}
@@ -285,8 +292,7 @@ class OnlineStatusReporter:
             if not self._is_running:
                 return
             self._timer = threading.Timer(
-                self.report_interval_ms / 1000.0,
-                self._on_timer_tick
+                self.report_interval_ms / 1000.0, self._on_timer_tick
             )
             self._timer.daemon = True
             self._timer.start()
@@ -330,8 +336,8 @@ class OnlineStatusReporter:
             self.platform_id,
             self.device_uuid,
             self.device_type,
-            None,   # 每次重新获取公网 IP
-            None,   # 每次重新获取位置信息
+            None,  # 每次重新获取公网 IP
+            None,  # 每次重新获取位置信息
             None,
             None,
             None,
@@ -412,5 +418,6 @@ def get_cached_online_count() -> int:
 
 def update_online_count_cache(count: int):
     import time
+
     _online_count_cache["count"] = count
     _online_count_cache["updated_at"] = time.time()

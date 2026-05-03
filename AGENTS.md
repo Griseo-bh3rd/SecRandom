@@ -4,6 +4,8 @@
 **Project:** SecRandom - 公平随机抽取系统 (Fair Random Selection System)
 **Stack:** Python 3.13.5 + PySide6 + PySide6-Fluent-Widgets
 **License:** GPLv3
+**Language:** 中文回复
+**Comments:** 中文注释
 
 ---
 

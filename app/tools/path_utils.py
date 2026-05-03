@@ -177,7 +177,9 @@ class PathManager:
             return Path(relative_path_str)
 
         if self._is_mutable_relative_path(relative_path_str):
-            runtime_path = self._build_relative_path(self._runtime_root, relative_path_str)
+            runtime_path = self._build_relative_path(
+                self._runtime_root, relative_path_str
+            )
             self._migrate_legacy_mutable_path(relative_path_str, runtime_path)
             return runtime_path
 

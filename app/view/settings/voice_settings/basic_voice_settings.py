@@ -310,4 +310,3 @@ class basic_settings_voice_wait(GroupHeaderCardWidget):
             ),
             self.voice_wait_complete_switch,
         )
-

@@ -14,7 +14,7 @@ from app.tools.personalised import *
 from app.tools.settings_default import *
 from app.tools.settings_access import *
 from app.Language.obtain_language import *
-from app.view.settings.best_config import BestConfigCard
+from app.common.fair_draw.best_config import BestConfigCard
 from app.page_building.another_window import create_analysis_window
 
 

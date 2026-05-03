@@ -12,32 +12,56 @@ from qfluentwidgets import (
     PushButton,
 )
 
-from app.tools.settings_access import readme_settings_async, update_settings
-from app.Language.obtain_language import get_content_name_async, get_any_position_value_async
+from app.tools.settings_access import update_settings
+from app.Language.obtain_language import (
+    get_content_name_async,
+    get_any_position_value_async,
+)
 
 
 SETTING_NAME_KEYS = {
     ("roll_call_settings", "draw_type"): ("extraction_settings", "draw_type"),
     ("lottery_settings", "draw_type"): ("extraction_settings", "draw_type"),
     ("quick_draw_settings", "draw_type"): ("extraction_settings", "draw_type"),
-    ("fair_draw_settings", "enable_avg_gap_protection"): ("fair_draw_settings", "enable_avg_gap_protection"),
+    ("fair_draw_settings", "enable_avg_gap_protection"): (
+        "fair_draw_settings",
+        "enable_avg_gap_protection",
+    ),
     ("fair_draw_settings", "fair_draw_time"): ("fair_draw_settings", "fair_draw_time"),
-    ("fair_draw_settings", "cold_start_enabled"): ("fair_draw_settings", "cold_start_enabled"),
+    ("fair_draw_settings", "cold_start_enabled"): (
+        "fair_draw_settings",
+        "cold_start_enabled",
+    ),
     ("fair_draw_settings", "shield_enabled"): ("fair_draw_settings", "shield_enabled"),
-    ("fair_draw_settings", "show_weight_transparency"): ("fair_draw_settings", "show_weight_transparency"),
+    ("fair_draw_settings", "show_weight_transparency"): (
+        "fair_draw_settings",
+        "show_weight_transparency",
+    ),
     ("fair_draw_settings", "base_weight"): ("fair_draw_settings", "base_weight"),
     ("fair_draw_settings", "min_weight"): ("fair_draw_settings", "min_weight"),
     ("fair_draw_settings", "max_weight"): ("fair_draw_settings", "max_weight"),
-    ("fair_draw_settings", "frequency_function"): ("fair_draw_settings", "frequency_function"),
-    ("fair_draw_settings", "frequency_weight"): ("fair_draw_settings", "frequency_weight"),
+    ("fair_draw_settings", "frequency_function"): (
+        "fair_draw_settings",
+        "frequency_function",
+    ),
+    ("fair_draw_settings", "frequency_weight"): (
+        "fair_draw_settings",
+        "frequency_weight",
+    ),
     ("fair_draw_settings", "group_weight"): ("fair_draw_settings", "group_weight"),
     ("fair_draw_settings", "gender_weight"): ("fair_draw_settings", "gender_weight"),
     ("fair_draw_settings", "time_weight"): ("fair_draw_settings", "time_weight"),
-    ("fair_draw_settings", "cold_start_rounds"): ("fair_draw_settings", "cold_start_rounds"),
+    ("fair_draw_settings", "cold_start_rounds"): (
+        "fair_draw_settings",
+        "cold_start_rounds",
+    ),
     ("fair_draw_settings", "gap_threshold"): ("fair_draw_settings", "gap_threshold"),
     ("fair_draw_settings", "min_pool_size"): ("fair_draw_settings", "min_pool_size"),
     ("fair_draw_settings", "shield_time"): ("fair_draw_settings", "shield_time"),
-    ("fair_draw_settings", "shield_time_unit"): ("fair_draw_settings", "shield_time_unit"),
+    ("fair_draw_settings", "shield_time_unit"): (
+        "fair_draw_settings",
+        "shield_time_unit",
+    ),
 }
 
 TYPE_LABELS = {
@@ -76,7 +100,6 @@ def _get_value_label(group, key, value):
 
 
 class AnalysisWindow(QWidget):
-
     applied = Signal()
 
     def __init__(self, parent=None, recommendations=None):
@@ -112,7 +135,11 @@ class AnalysisWindow(QWidget):
 
         metrics = {}
         try:
-            from app.common.config_advisor import load_roll_call_history, compute_fairness_metrics
+            from app.common.fair_draw.config_advisor import (
+                load_roll_call_history,
+                compute_fairness_metrics,
+            )
+
             stats = load_roll_call_history()
             metrics = compute_fairness_metrics(stats)
         except Exception:
@@ -128,9 +155,9 @@ class AnalysisWindow(QWidget):
             f"从未被抽中 {metrics.get('zeros', 0)} 人  ·  单人最高 {metrics.get('max_one_pct', 0)}%",
         ]
         for line in lines:
-            l = BodyLabel(line)
-            l.setWordWrap(True)
-            layout.addWidget(l)
+            label = BodyLabel(line)
+            label.setWordWrap(True)
+            layout.addWidget(label)
         return container
 
     def _build_suggestions_section(self):
@@ -145,7 +172,8 @@ class AnalysisWindow(QWidget):
 
         if self._recommendations is None:
             try:
-                from app.common.config_advisor import get_recommendations
+                from app.common.fair_draw.config_advisor import get_recommendations
+
                 self._recommendations = get_recommendations()
             except Exception:
                 self._recommendations = []
@@ -234,10 +262,13 @@ class AnalysisWindow(QWidget):
                 pass
 
         if applied_count > 0:
-            MessageBox(
+            dialog = MessageBox(
                 self._tr("apply_success"),
                 f"{applied_count} 项配置已应用",
                 self.window(),
-            ).exec()
+            )
+            dialog.yesButton.setText(self._tr("confirm_btn"))
+            dialog.cancelButton.setText(self._tr("cancel_btn"))
+            dialog.exec()
             self.applied.emit()
         self.window().close()

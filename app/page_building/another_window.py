@@ -712,14 +712,20 @@ def create_remaining_list_window(
 class weight_formula_window_template(PageTemplate):
     def __init__(self, parent=None, settings_group=None):
         self._sr_settings_group = settings_group
+
         def factory(parent):
-            return WeightFormulaPage(parent=parent, settings_group=self._sr_settings_group)
+            return WeightFormulaPage(
+                parent=parent, settings_group=self._sr_settings_group
+            )
+
         factory.__name__ = "WeightFormulaPage"
         super().__init__(content_widget_class=factory, parent=parent)
 
 
 def create_weight_formula_window(parent=None, settings_group=None):
-    title = get_content_name_async(settings_group or "lottery_settings", "wp_formula_title")
+    title = get_content_name_async(
+        settings_group or "lottery_settings", "wp_formula_title"
+    )
     window = SimpleWindowTemplate(title, width=550, height=500, parent=parent)
     window.add_page_from_template(
         "weight_formula",
@@ -825,7 +831,8 @@ def create_backup_manager_window():
 class analysis_window_template(PageTemplate):
     def __init__(self, parent=None):
         def factory(parent):
-            from app.view.settings.analysis_window import AnalysisWindow
+            from app.view.another_window.analysis_window import AnalysisWindow
+
             return AnalysisWindow(parent=parent)
 
         factory.__name__ = "AnalysisWindow"

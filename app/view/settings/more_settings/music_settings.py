@@ -216,9 +216,7 @@ class music_management(GroupHeaderCardWidget):
 class music_loop_setting(GroupHeaderCardWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle(
-            get_content_name_async("music_settings", "background_music_loop")
-        )
+        self.setTitle(get_content_name_async("music_settings", "background_music_loop"))
         self.setBorderRadius(8)
 
         self.background_music_loop_switch = SwitchButton()
@@ -233,9 +231,7 @@ class music_loop_setting(GroupHeaderCardWidget):
             )
         )
         _loop = readme_settings_async("music_settings", "background_music_loop")
-        self.background_music_loop_switch.setChecked(
-            True if _loop is None else _loop
-        )
+        self.background_music_loop_switch.setChecked(True if _loop is None else _loop)
         self.background_music_loop_switch.checkedChanged.connect(
             self.__on_background_music_loop_changed
         )
@@ -243,9 +239,7 @@ class music_loop_setting(GroupHeaderCardWidget):
         self.addGroup(
             get_theme_icon("ic_fluent_arrow_repeat_all_20_filled"),
             get_content_name_async("music_settings", "background_music_loop"),
-            get_content_description_async(
-                "music_settings", "background_music_loop"
-            ),
+            get_content_description_async("music_settings", "background_music_loop"),
             self.background_music_loop_switch,
         )
 
