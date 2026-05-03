@@ -525,11 +525,11 @@ class lottery_display_settings(GroupHeaderCardWidget):
             )
         )
         self.show_weight_switch.setChecked(
-            bool(readme_settings_async("fair_draw_settings", "show_weight_transparency"))
+            bool(self._read_setting("show_weight_transparency"))
         )
         self.show_weight_switch.checkedChanged.connect(
-            lambda: update_settings(
-                "fair_draw_settings", "show_weight_transparency",
+            lambda: self._write_setting(
+                "show_weight_transparency",
                 self.show_weight_switch.isChecked()
             )
         )
@@ -591,6 +591,48 @@ class lottery_display_settings(GroupHeaderCardWidget):
         )
 
         # 添加设置项到分组
+        self.addGroup(
+            get_theme_icon("ic_fluent_text_font_20_filled"),
+            get_content_name_async("lottery_settings", "use_global_font"),
+            get_content_description_async("lottery_settings", "use_global_font"),
+            self.use_global_font_combo,
+        )
+        self.addGroup(
+            get_theme_icon("ic_fluent_text_font_20_filled"),
+            get_content_name_async("lottery_settings", "custom_font"),
+            get_content_description_async("lottery_settings", "custom_font"),
+            self.custom_font_combo,
+        )
+        self.addGroup(
+            get_theme_icon("ic_fluent_text_font_20_filled"),
+            get_content_name_async("lottery_settings", "font_size"),
+            get_content_description_async("lottery_settings", "font_size"),
+            self.font_size_spin,
+        )
+        self.addGroup(
+            get_theme_icon("ic_fluent_slide_text_sparkle_20_filled"),
+            get_content_name_async("lottery_settings", "display_format"),
+            get_content_description_async("lottery_settings", "display_format"),
+            self.display_format_combo,
+        )
+        self.addGroup(
+            get_theme_icon("ic_fluent_style_guide_20_filled"),
+            get_content_name_async("lottery_settings", "display_style"),
+            get_content_description_async("lottery_settings", "display_style"),
+            self.display_style_combo,
+        )
+        self.addGroup(
+            get_theme_icon("ic_fluent_slide_text_sparkle_20_filled"),
+            get_content_name_async("lottery_settings", "show_random"),
+            get_content_description_async("lottery_settings", "show_random"),
+            self.random_student_format_combo,
+        )
+        self.addGroup(
+            get_theme_icon("ic_fluent_tag_20_filled"),
+            get_content_name_async("lottery_settings", "show_tags"),
+            get_content_description_async("lottery_settings", "show_tags"),
+            self.show_tags_switch,
+        )
         self.addGroup(
             get_theme_icon("ic_fluent_eye_20_filled"),
             get_content_name_async("lottery_settings", "show_weight_transparency"),

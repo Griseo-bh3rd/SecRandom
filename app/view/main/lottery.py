@@ -121,9 +121,9 @@ class Lottery(QWidget):
         self.result_layout.addLayout(self.result_grid)
         lottery_container.addWidget(self.result_widget)
 
-        # 权重透明化面板（默认隐藏）
+        # 权重透明化面板（底部，默认隐藏）
         from app.common.display.weight_panel import WeightPanel
-        self.weight_panel = WeightPanel(self)
+        self.weight_panel = WeightPanel(self, settings_group="lottery_settings")
         self.weight_panel.setVisible(False)
         lottery_container.addWidget(self.weight_panel)
 

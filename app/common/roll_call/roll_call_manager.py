@@ -1305,20 +1305,44 @@ def _update_remaining_list_delayed(widget):
 def _update_weight_panel(widget):
     """更新权重透明化面板"""
     try:
-        if not readme_settings_async("fair_draw_settings", "show_weight_transparency"):
+        enabled = readme_settings_async("roll_call_settings", "show_weight_transparency")
+        logger.debug(f"权重透明化(RollCall)：设置={enabled}")
+        if not enabled:
             if hasattr(widget, "weight_panel"):
                 widget.weight_panel.clear()
                 widget.weight_panel.setVisible(False)
             return
 
-        students_with_weight = []
         selected_students_dict = getattr(widget, "final_selected_students_dict", None) or []
+        logger.debug(f"权重面板(RollCall)：抽取结果数量={len(selected_students_dict)}")
+
+        students_with_weight = []
         for student in selected_students_dict:
-            if isinstance(student, dict) and "weight_details" in student:
+            if not isinstance(student, dict):
+                continue
+            if "weight_details" in student:
                 students_with_weight.append(student)
+            elif "name" in student or "id" in student:
+                students_with_weight.append(student)
+
+        # 如果没有 weight_details，尝试计算（不限抽取模式均显示）
+        if students_with_weight and "weight_details" not in (students_with_weight[0] or {}):
+            class_name = getattr(widget, "final_class_name", None) or getattr(
+                widget.manager, "current_class_name", ""
+            )
+            if class_name:
+                from app.common.history import calculate_weight
+                students_with_weight = calculate_weight(students_with_weight, class_name)
+                logger.debug(f"权重面板(RollCall)：已为 {len(students_with_weight)} 个学生计算权重")
 
         if hasattr(widget, "weight_panel") and students_with_weight:
             widget.weight_panel.set_students(students_with_weight)
             widget.weight_panel.setVisible(True)
+            logger.debug(f"权重面板(RollCall)已更新，展示 {len(students_with_weight)} 个学生")
+        else:
+            logger.debug(
+                f"权重面板(RollCall)未显示: has_panel={hasattr(widget, 'weight_panel')}, "
+                f"count={len(students_with_weight)}"
+            )
     except Exception as e:
         logger.exception(f"更新权重面板失败: {e}")

@@ -1,158 +1,151 @@
-# ==================================================
-# 权重明细面板组件
-# ==================================================
-from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
-    QHeaderView,
-    QWidget,
-    QTableWidgetItem,
-)
-from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt
-from qfluentwidgets import (
-    CardWidget,
-    TableWidget,
-    ToolButton,
-    BodyLabel,
-    FluentIcon,
-)
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QHeaderView, QFrame, QAbstractItemView
+from PySide6.QtGui import QColor, QStandardItemModel, QStandardItem
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
+from qfluentwidgets import TableView, ToolButton, BodyLabel
+from loguru import logger
 
-from app.common.display.formula_dialog import FormulaDialog
+from app.tools.personalised import get_theme_icon
+from app.Language.obtain_language import get_content_name_async
 
 
-class WeightPanel(CardWidget):
-    """可折叠的权重明细展示面板
+_COLUMNS = [
+    "wp_col_student", "wp_col_base", "wp_col_freq", "wp_col_group",
+    "wp_col_gender", "wp_col_time", "wp_col_shield", "wp_col_total",
+]
 
-    用于在抽签/点名结果界面展示每个被抽中学生的权重分解数据。
-    默认折叠状态，点击标题栏展开/折叠。
-    """
 
-    def __init__(self, parent=None):
+class WeightPanel(QFrame):
+
+    _DEFAULT_SETTINGS_GROUP = "lottery_settings"
+    _HEADER_HEIGHT = 34
+    _EXPANDED_MAX = 300
+
+    def __init__(self, parent=None, settings_group=None):
         super().__init__(parent)
         self._collapsed = True
-        self._dialog = None
+        self._settings_group = settings_group or self._DEFAULT_SETTINGS_GROUP
+        self._anim = None
+        self._model = None
+        self.setMinimumHeight(0)
+        self.setMaximumHeight(self._HEADER_HEIGHT)
         self._init_ui()
+
+    def _t(self, key):
+        return get_content_name_async(self._settings_group, key)
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(12, 8, 12, 8)
-        main_layout.setSpacing(6)
+        main_layout.setContentsMargins(6, 2, 6, 2)
+        main_layout.setSpacing(2)
 
-        # 标题栏
         header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
 
-        self._collapse_btn = ToolButton(FluentIcon.CHEVRON_RIGHT, self)
-        self._collapse_btn.setToolTip("展开")
+        self._collapse_btn = ToolButton(get_theme_icon("ic_fluent_chevron_right_20_filled"), self)
+        self._collapse_btn.setFixedSize(28, 28)
+        self._collapse_btn.setToolTip(self._t("wp_expand"))
         self._collapse_btn.clicked.connect(self.toggle_collapse)
         header.addWidget(self._collapse_btn)
 
-        self._title_label = BodyLabel("权重明细", self)
+        self._title_label = BodyLabel(self._t("wp_title"), self)
         header.addWidget(self._title_label)
-
         header.addStretch()
 
-        self._help_btn = ToolButton(FluentIcon.HELP, self)
-        self._help_btn.setToolTip("查看权重计算规则")
+        self._help_btn = ToolButton(get_theme_icon("ic_fluent_question_circle_20_filled"), self)
+        self._help_btn.setFixedSize(28, 28)
+        self._help_btn.setToolTip(self._t("wp_help"))
         self._help_btn.clicked.connect(self._show_formula_dialog)
         header.addWidget(self._help_btn)
 
         main_layout.addLayout(header)
 
-        # 权重表格
-        self._table = TableWidget(self)
-        self._table.setColumnCount(8)
-        self._table.setHorizontalHeaderLabels([
-            "学生", "基础权重", "频率因子", "小组平衡",
-            "性别平衡", "时间因子", "屏蔽", "最终权重",
-        ])
-        self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self._table = TableView(self)
+        self._table.setBorderVisible(True)
+        self._table.setBorderRadius(6)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+
+        self._model = QStandardItemModel(0, len(_COLUMNS), self)
+        self._model.setHorizontalHeaderLabels([self._t(c) for c in _COLUMNS])
+        self._table.setModel(self._model)
+
+        hh = self._table.horizontalHeader()
+        hh.setSectionResizeMode(QHeaderView.Stretch)
+        vh = self._table.verticalHeader()
+        vh.setVisible(True)
+        vh.setSectionResizeMode(QHeaderView.Fixed)
+        vh.setDefaultSectionSize(24)
+
         self._table.setVisible(False)
+        self._table.setMinimumHeight(0)
         main_layout.addWidget(self._table)
 
     def set_students(self, students_data: list):
-        """设置要展示的学生权重数据
-
-        Args:
-            students_data: 学生数据列表，每项应包含 name 和 weight_details 字段
-        """
-        self._table.clearContents()
-        self._table.setRowCount(0)
-
+        self._model.removeRows(0, self._model.rowCount())
         for student in students_data:
             if not isinstance(student, dict):
                 continue
-
-            name = student.get("name", student.get("id", "?"))
             details = student.get("weight_details", {})
             if not details:
                 continue
+            name = student.get("name", student.get("id", "?"))
 
-            row = self._table.rowCount()
-            self._table.insertRow(row)
+            row_items = [
+                str(name),
+                f"{details.get('base_weight', 0):.2f}",
+                f"{details.get('frequency_penalty', 0):.2f}",
+                f"{details.get('group_balance', 0):.2f}",
+                f"{details.get('gender_balance', 0):.2f}",
+                f"{details.get('time_factor', 0):.2f}",
+                self._t("wp_shielded") if details.get("is_shielded") else self._t("wp_normal"),
+                f"{details.get('total_weight', student.get('next_weight', 0)):.2f}",
+            ]
 
-            # 列: 学生 | 基础 | 频率 | 小组 | 性别 | 时间 | 屏蔽 | 最终
-            self._table.setItem(row, 0, self._make_item(str(name)))
+            row = []
+            for text in row_items:
+                item = QStandardItem(text)
+                item.setTextAlignment(Qt.AlignCenter)
+                item.setEditable(False)
+                row.append(item)
 
-            base = details.get("base_weight", 0)
-            self._table.setItem(row, 1, self._make_item(f"{base:.2f}"))
+            if details.get("is_shielded"):
+                row[-1].setForeground(QColor("red"))
 
-            freq = details.get("frequency_penalty", 0)
-            self._table.setItem(row, 2, self._make_item(f"{freq:.2f}"))
-
-            grp = details.get("group_balance", 0)
-            self._table.setItem(row, 3, self._make_item(f"{grp:.2f}"))
-
-            gen = details.get("gender_balance", 0)
-            self._table.setItem(row, 4, self._make_item(f"{gen:.2f}"))
-
-            time_f = details.get("time_factor", 0)
-            self._table.setItem(row, 5, self._make_item(f"{time_f:.2f}"))
-
-            shielded = details.get("is_shielded", False)
-            self._table.setItem(
-                row, 6, self._make_item("已屏蔽" if shielded else "正常")
-            )
-
-            total = details.get("total_weight", student.get("next_weight", 0))
-            item = self._make_item(f"{total:.2f}")
-            if shielded:
-                item.setForeground(QColor("red"))
-            self._table.setItem(row, 7, item)
+            self._model.appendRow(row)
 
     def toggle_collapse(self):
-        """切换折叠/展开"""
         self._collapsed = not self._collapsed
         self._table.setVisible(not self._collapsed)
         if self._collapsed:
-            self._collapse_btn.setIcon(FluentIcon.CHEVRON_RIGHT)
-            self._collapse_btn.setToolTip("展开")
+            self._collapse_btn.setIcon(get_theme_icon("ic_fluent_chevron_right_20_filled"))
+            self._collapse_btn.setToolTip(self._t("wp_expand"))
         else:
-            self._collapse_btn.setIcon(FluentIcon.CHEVRON_DOWN)
-            self._collapse_btn.setToolTip("折叠")
+            self._collapse_btn.setIcon(get_theme_icon("ic_fluent_chevron_down_20_filled"))
+            self._collapse_btn.setToolTip(self._t("wp_collapse"))
+        self._animate()
+
+    def _animate(self):
+        if self._anim is not None and self._anim.state() == QPropertyAnimation.State.Running:
+            self._anim.stop()
+        target = self._HEADER_HEIGHT if self._collapsed else self._EXPANDED_MAX
+        self._anim = QPropertyAnimation(self, b"maximumHeight")
+        self._anim.setDuration(250)
+        self._anim.setStartValue(self.height())
+        self._anim.setEndValue(target)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._anim.start()
 
     def _show_formula_dialog(self):
-        if self._dialog is None:
-            self._dialog = FormulaDialog(self)
-        self._dialog.exec()
-
-    def _make_item(self, text: str):
-        item = QTableWidgetItem(text)
-        item.setTextAlignment(Qt.AlignCenter)
-        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-        return item
+        logger.debug("打开权重计算规则弹窗")
+        from app.page_building.another_window import create_weight_formula_window
+        create_weight_formula_window(parent=None, settings_group=self._settings_group)
 
     def clear(self):
-        """清空表格"""
-        self._table.clearContents()
-        self._table.setRowCount(0)
+        self._model.removeRows(0, self._model.rowCount())
         if not self._collapsed:
             self.toggle_collapse()
 
 
-def create_weight_panel(students_data: list, parent=None) -> WeightPanel:
-    """便捷工厂函数，创建并填充权重面板"""
-    panel = WeightPanel(parent)
+def create_weight_panel(students_data: list, parent=None, settings_group=None) -> WeightPanel:
+    panel = WeightPanel(parent, settings_group=settings_group)
     panel.set_students(students_data)
     return panel
