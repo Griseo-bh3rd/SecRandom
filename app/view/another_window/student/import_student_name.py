@@ -449,6 +449,9 @@ class ImportStudentNameWindow(QWidget):
                     get_content_name_async("import_student_name", "unsupported_format")
                 )
 
+            # 将列名转换为字符串，避免整数列名与UI层字符串不匹配
+            data.columns = [str(col) for col in data.columns]
+
             # 获取列名
             columns = list(data.columns)
 
