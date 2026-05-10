@@ -20,6 +20,7 @@ from app.tools.path_utils import *
 from app.tools.settings_default import *
 
 
+_UNSET = object()
 _settings_cache_lock = threading.RLock()
 _settings_cache_data = None
 _settings_cache_signature = None
@@ -196,15 +197,16 @@ class AsyncSettingsReader(QObject):
             self.thread.wait(1000)
 
 
-def readme_settings(first_level_key: str, second_level_key: str):
-    """读取设置
+def get_setting(first_level_key: str, second_level_key: str, default=_UNSET):
+    """同步读取设置。
 
     Args:
         first_level_key: 第一层的键
         second_level_key: 第二层的键
+        default: 设置文件和默认设置中都不存在该项时使用的回退值
 
     Returns:
-        返回设置值
+        设置值；未找到且未传入 default 时返回 None
     """
     try:
         settings_data = _read_settings_data()
@@ -217,35 +219,113 @@ def readme_settings(first_level_key: str, second_level_key: str):
             return copy.deepcopy(value)
 
         default_setting = _get_default_setting(first_level_key, second_level_key)
-        if isinstance(default_setting, dict) and "default_value" in default_setting:
-            default_value = default_setting["default_value"]
-        else:
-            default_value = default_setting
+        default_value = default_setting
+        if default_value is None and default is not _UNSET:
+            default_value = default
         # logger.debug(f"使用默认设置: {first_level_key}.{second_level_key} = {default_value}")
-        return default_value
+        return copy.deepcopy(default_value)
     except Exception as e:
         logger.warning(f"读取设置失败: {e}")
         default_setting = _get_default_setting(first_level_key, second_level_key)
-        if isinstance(default_setting, dict) and "default_value" in default_setting:
-            return default_setting["default_value"]
-        return default_setting
+        if default_setting is None and default is not _UNSET:
+            return copy.deepcopy(default)
+        return copy.deepcopy(default_setting)
 
 
-def readme_settings_async(first_level_key: str, second_level_key: str, timeout=1000):
-    """异步读取设置（简化版：直接调用同步方法）
+def readme_settings(first_level_key: str, second_level_key: str):
+    """读取设置。
 
-    为保持 API 兼容性而保留，但在 Nuitka 环境下 QTimer 有兼容性问题，
-    因此直接使用同步方法。实际测试表明同步方法性能已足够好。
+    兼容旧接口；新代码请使用 get_setting()，语义更清晰。
+    """
+    return get_setting(first_level_key, second_level_key)
+
+
+def readme_settings_async(first_level_key: str, second_level_key: str, default=_UNSET):
+    """兼容旧名称的同步设置读取函数。
+
+    该函数不会创建异步任务；历史上名称带有 async，但实际已改为同步读取。
+    第三个参数保留为默认值回退，不再表示 timeout。
 
     Args:
-        first_level_key (str): 第一层的键
-        second_level_key (str): 第二层的键
-        timeout (int, optional): 保留参数，用于兼容性
+        first_level_key: 第一层的键
+        second_level_key: 第二层的键
+        default: 设置文件和默认设置中都不存在该项时使用的回退值
 
     Returns:
-        Any: 设置值
+        设置值
     """
-    return readme_settings(first_level_key, second_level_key)
+    return get_setting(first_level_key, second_level_key, default)
+
+
+def get_bool_setting(
+    first_level_key: str, second_level_key: str, default: bool = False
+) -> bool:
+    """读取布尔设置，并对常见字符串/数字形式做安全转换。"""
+    value = get_setting(first_level_key, second_level_key, default)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on", "y"}:
+            return True
+        if normalized in {"0", "false", "no", "off", "n", ""}:
+            return False
+    logger.warning(
+        f"布尔设置值类型无效: {first_level_key}.{second_level_key} = {value} (类型: {type(value)})"
+    )
+    return default
+
+
+def get_int_setting(
+    first_level_key: str, second_level_key: str, default: int = 0
+) -> int:
+    """读取整数设置。"""
+    value = get_setting(first_level_key, second_level_key, default)
+    try:
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str) and value.strip():
+            return int(float(value.strip()))
+    except (ValueError, TypeError):
+        pass
+    logger.warning(
+        f"整数设置值类型无效: {first_level_key}.{second_level_key} = {value} (类型: {type(value)})"
+    )
+    return default
+
+
+def get_float_setting(
+    first_level_key: str, second_level_key: str, default: float = 0.0
+) -> float:
+    """读取浮点数设置。"""
+    value = get_setting(first_level_key, second_level_key, default)
+    try:
+        if isinstance(value, bool):
+            return float(value)
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str) and value.strip():
+            return float(value.strip())
+    except (ValueError, TypeError):
+        pass
+    logger.warning(
+        f"浮点设置值类型无效: {first_level_key}.{second_level_key} = {value} (类型: {type(value)})"
+    )
+    return default
+
+
+def get_str_setting(
+    first_level_key: str, second_level_key: str, default: str = ""
+) -> str:
+    """读取字符串设置。"""
+    value = get_setting(first_level_key, second_level_key, default)
+    if value is None:
+        return default
+    return str(value)
 
 
 class SettingsSignals(QObject):
