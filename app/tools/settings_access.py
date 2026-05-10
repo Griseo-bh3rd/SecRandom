@@ -10,12 +10,82 @@ from PySide6.QtNetwork import *
 import json
 import asyncio
 import uuid
+import copy
+import threading
 from loguru import logger
 from typing import Any
 
 from app.tools.variable import *
 from app.tools.path_utils import *
 from app.tools.settings_default import *
+
+
+_settings_cache_lock = threading.RLock()
+_settings_cache_data = None
+_settings_cache_signature = None
+
+
+def _get_file_signature(path):
+    try:
+        stat = path.stat()
+        return (stat.st_mtime_ns, stat.st_size)
+    except Exception:
+        return None
+
+
+def _read_settings_data():
+    """读取设置文件并按文件签名缓存，避免高频重复 JSON I/O。"""
+    global _settings_cache_data, _settings_cache_signature
+
+    settings_path = get_settings_path()
+    signature = _get_file_signature(settings_path)
+    if signature is None:
+        with _settings_cache_lock:
+            _settings_cache_data = None
+            _settings_cache_signature = None
+        return {}
+
+    with _settings_cache_lock:
+        if _settings_cache_signature == signature and isinstance(
+            _settings_cache_data, dict
+        ):
+            return _settings_cache_data
+
+        try:
+            with open_file(settings_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            if not content or not content.strip():
+                logger.warning(f"设置文件为空: {settings_path}")
+                data = {}
+            else:
+                data = json.loads(content)
+                if not isinstance(data, dict):
+                    data = {}
+        except Exception as e:
+            logger.warning(f"读取设置缓存失败: {e}")
+            data = {}
+
+        _settings_cache_data = data
+        _settings_cache_signature = signature
+        return data
+
+
+def _replace_settings_cache(settings_data):
+    global _settings_cache_data, _settings_cache_signature
+
+    settings_path = get_settings_path()
+    with _settings_cache_lock:
+        _settings_cache_data = settings_data if isinstance(settings_data, dict) else {}
+        _settings_cache_signature = _get_file_signature(settings_path)
+
+
+def clear_settings_cache():
+    """清空设置缓存，供外部批量导入/重建设置文件后调用。"""
+    global _settings_cache_data, _settings_cache_signature
+
+    with _settings_cache_lock:
+        _settings_cache_data = None
+        _settings_cache_signature = None
 
 
 # ==================================================
@@ -44,20 +114,14 @@ class SettingsReaderWorker(QObject):
 
     def _read_setting_value(self):
         """从设置文件或默认设置中读取值"""
-        settings_path = get_settings_path()
-        if file_exists(settings_path):
-            try:
-                with open_file(settings_path, "r", encoding="utf-8") as f:
-                    settings_data = json.load(f)
-                    if (
-                        self.first_level_key in settings_data
-                        and self.second_level_key in settings_data[self.first_level_key]
-                    ):
-                        return settings_data[self.first_level_key][
-                            self.second_level_key
-                        ]
-            except (json.JSONDecodeError, KeyError):
-                pass
+        settings_data = _read_settings_data()
+        if (
+            self.first_level_key in settings_data
+            and self.second_level_key in settings_data[self.first_level_key]
+        ):
+            return copy.deepcopy(
+                settings_data[self.first_level_key][self.second_level_key]
+            )
         return self._get_default_value()
 
     def _get_default_value(self):
@@ -143,21 +207,14 @@ def readme_settings(first_level_key: str, second_level_key: str):
         返回设置值
     """
     try:
-        settings_path = get_settings_path()
-        if file_exists(settings_path):
-            with open_file(settings_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                if not content or not content.strip():
-                    logger.warning(f"设置文件为空: {settings_path}")
-                else:
-                    settings_data = json.loads(content)
-                    if (
-                        first_level_key in settings_data
-                        and second_level_key in settings_data[first_level_key]
-                    ):
-                        value = settings_data[first_level_key][second_level_key]
-                        # logger.debug(f"从设置文件读取: {first_level_key}.{second_level_key} = {value}")
-                        return value
+        settings_data = _read_settings_data()
+        if (
+            first_level_key in settings_data
+            and second_level_key in settings_data[first_level_key]
+        ):
+            value = settings_data[first_level_key][second_level_key]
+            # logger.debug(f"从设置文件读取: {first_level_key}.{second_level_key} = {value}")
+            return copy.deepcopy(value)
 
         default_setting = _get_default_setting(first_level_key, second_level_key)
         if isinstance(default_setting, dict) and "default_value" in default_setting:
@@ -228,10 +285,7 @@ def update_settings(first_level_key: str, second_level_key: str, value: Any):
         ensure_dir(settings_path.parent)
 
         # 读取现有设置
-        settings_data = {}
-        if file_exists(settings_path):
-            with open_file(settings_path, "r", encoding="utf-8") as f:
-                settings_data = json.load(f)
+        settings_data = copy.deepcopy(_read_settings_data())
 
         # 更新设置
         if first_level_key not in settings_data:
@@ -243,6 +297,7 @@ def update_settings(first_level_key: str, second_level_key: str, value: Any):
         # 写入设置文件
         with open_file(settings_path, "w", encoding="utf-8") as f:
             json.dump(settings_data, f, ensure_ascii=False, indent=4)
+        _replace_settings_cache(settings_data)
 
         if not (
             first_level_key == "user_info"
