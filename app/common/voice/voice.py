@@ -7,6 +7,7 @@
 # --------- 标准库 ---------
 import asyncio
 import concurrent.futures
+import inspect
 import json
 import os
 import platform
@@ -44,6 +45,13 @@ from edge_tts.exceptions import NoAudioReceived, WebSocketError
 from app.tools.path_utils import ensure_dir, get_audio_path
 from app.tools.settings_access import readme_settings_async
 from app.tools.config import restore_volume
+
+try:
+    _EDGE_TTS_SUPPORTS_AUDIO_FORMAT = (
+        "audio_format" in inspect.signature(edge_tts.Communicate).parameters
+    )
+except Exception:
+    _EDGE_TTS_SUPPORTS_AUDIO_FORMAT = False
 
 
 # 权限检查装饰器
@@ -403,7 +411,14 @@ class VoiceCacheManager:
 
         while retry_count < max_retries:
             try:
-                communicate = edge_tts.Communicate(text, voice, audio_format="riff-24khz-16bit-mono-pcm")
+                if _EDGE_TTS_SUPPORTS_AUDIO_FORMAT:
+                    communicate = edge_tts.Communicate(
+                        text,
+                        voice,
+                        audio_format="riff-24khz-16bit-mono-pcm",
+                    )
+                else:
+                    communicate = edge_tts.Communicate(text, voice)
                 await communicate.save(file_path)
                 logger.debug(f"成功生成语音并保存至: {file_path}")
                 return
@@ -470,15 +485,24 @@ class VoiceCacheManager:
 
     def _is_valid_audio(self, file_path: str) -> bool:
         """检查音频文件是否为有效格式"""
+        if sf is None:
+            return True
+
         try:
             sf.info(file_path)
             return True
-        except Exception:
+        except sf.LibsndfileError as e:
+            if getattr(e, "error_string", "") != "Format not recognised.":
+                logger.warning(f"检查缓存文件失败，保留原文件: {file_path}, 错误: {e}")
+                return True
+
             logger.warning(f"缓存文件格式无效，将重新生成: {file_path}")
             try:
                 os.remove(file_path)
-            except OSError:
-                pass
+            except OSError as remove_error:
+                logger.warning(
+                    f"删除无效缓存文件失败: {file_path}, 错误: {remove_error}"
+                )
             return False
 
     def _save_to_disk(self, file_path: str, data: np.ndarray, fs: int) -> None:
@@ -865,4 +889,4 @@ class TTSHandler:
                 try:
                     self.voice_engine.stop()
                 except Exception as e:
-                    logger.warning(f"停止系统TTS引擎失败: {e}")
+                    logger.warning(f"停止系统TTS引擎失败: {e}")
