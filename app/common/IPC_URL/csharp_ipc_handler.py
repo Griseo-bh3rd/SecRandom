@@ -421,7 +421,7 @@ if CSHARP_AVAILABLE:
                         )
                         return True
                     except asyncio.CancelledError:
-                        return False
+                        raise
                     except Exception as e:
                         logger.warning(
                             f"C# IPC 连接失败（ClassIsland 可能未运行），{retry_delay:.0f}s 后重试: {e}"
@@ -429,7 +429,7 @@ if CSHARP_AVAILABLE:
                         try:
                             await asyncio.sleep(retry_delay)
                         except asyncio.CancelledError:
-                            return False
+                            raise
                 return False
 
             async def client():
