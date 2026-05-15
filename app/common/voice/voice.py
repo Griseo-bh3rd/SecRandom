@@ -50,8 +50,11 @@ try:
     _EDGE_TTS_SUPPORTS_AUDIO_FORMAT = (
         "audio_format" in inspect.signature(edge_tts.Communicate).parameters
     )
-except Exception:
+except (AttributeError, TypeError, ValueError):
     _EDGE_TTS_SUPPORTS_AUDIO_FORMAT = False
+    logger.warning("无法检测 edge-tts audio_format 参数支持情况，将使用兼容模式")
+
+LIBSNDFILE_FORMAT_ERROR_CODE = 1  # libsndfile 错误码 1 表示格式不识别
 
 
 # 权限检查装饰器
@@ -486,13 +489,16 @@ class VoiceCacheManager:
     def _is_valid_audio(self, file_path: str) -> bool:
         """检查音频文件是否为有效格式"""
         if sf is None:
+            # 未安装 soundfile 时无法做格式探测，跳过校验避免误删缓存
+            logger.warning(f"soundfile 不可用，跳过音频格式校验: {file_path}")
             return True
 
         try:
             sf.info(file_path)
             return True
         except sf.LibsndfileError as e:
-            if getattr(e, "error_string", "") != "Format not recognised.":
+            # 非“格式不识别”错误通常是临时I/O问题（如锁文件），保留缓存避免误删
+            if e.code != LIBSNDFILE_FORMAT_ERROR_CODE:
                 logger.warning(f"检查缓存文件失败，保留原文件: {file_path}, 错误: {e}")
                 return True
 
