@@ -69,6 +69,9 @@ def get_history_file_path(history_type: str, file_name: str) -> Path:
         Path: 历史记录文件路径
     """
     history_dir = get_path(f"data/history/{history_type}_history")
+    if history_dir.exists() and not history_dir.is_dir():
+        logger.warning(f"检测到旧版历史记录文件，正在删除以创建目录: {history_dir}")
+        history_dir.unlink()
     history_dir.mkdir(parents=True, exist_ok=True)
     return history_dir / f"{file_name}.json"
 
